@@ -1,0 +1,16 @@
+export const colors = {
+  brandNavy: '#041627',
+  brandBlue: '#0040e0',
+  brandFocusBlue: '#1A73E8',
+  appBackground: '#fbf9fa',
+  cardBackground: '#ffffff',
+  surfaceSecondary: '#f5f3f5',
+  surfaceHover: '#e5eeff',
+  surfaceSubtle: '#e9e7e9',
+  borderSubtle: '#e4e2e3',
+  borderDefault: '#e2e8f0',
+  success: '#1a853c',
+  warning: '#ca8a04',
+  error: '#ba1a1a',
+  urgency: '#7c3aed',
+};
