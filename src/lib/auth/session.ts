@@ -32,7 +32,7 @@ export async function createSession(userId: string): Promise<string> {
 
 export async function getSession(): Promise<SessionUser | null> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
     if (!token) return null;
@@ -77,7 +77,7 @@ export async function getSession(): Promise<SessionUser | null> {
 
 export async function destroySession(token?: string): Promise<void> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const activeToken = token || cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
     if (activeToken) {
