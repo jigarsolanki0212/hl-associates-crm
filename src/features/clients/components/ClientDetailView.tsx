@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 
 import { Toast, ToastMessage } from '@/components/ui/Toast';
+import { Edit, Edit3 } from 'lucide-react';
 
 interface ClientDetailProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,9 +38,22 @@ interface ClientDetailProps {
 
 export function ClientDetailView({ client }: ClientDetailProps) {
   const router = useRouter();
+  const [currentClient, setCurrentClient] = React.useState(client);
   const [activeTab, setActiveTab] = React.useState<
     'overview' | 'services' | 'proformas' | 'renewals' | 'followups' | 'activity'
   >('overview');
+
+  // Edit Client Modal State
+  const [isEditClientOpen, setIsEditClientOpen] = React.useState(false);
+  const [editCompany, setEditCompany] = React.useState(client.companyName || '');
+  const [editContact, setEditContact] = React.useState(client.contactName || '');
+  const [editTitle, setEditTitle] = React.useState(client.contactTitle || '');
+  const [editEmail, setEditEmail] = React.useState(client.email || '');
+  const [editPhone, setEditPhone] = React.useState(client.phone || '');
+  const [editAddress, setEditAddress] = React.useState(client.address || '');
+  const [editTaxId, setEditTaxId] = React.useState(client.taxId || '');
+  const [editStatus, setEditStatus] = React.useState(client.status || 'ACTIVE');
+  const [isSavingClient, setIsSavingClient] = React.useState(false);
 
   // Renew Service Modal
   const [renewingServiceId, setRenewingServiceId] = React.useState<string | null>(null);
@@ -53,6 +67,50 @@ export function ClientDetailView({ client }: ClientDetailProps) {
   const [emailSubject, setEmailSubject] = React.useState(`Regulatory Update for ${client.companyName}`);
   const [emailBody, setEmailBody] = React.useState(`Dear ${client.contactName},\n\nWe are writing to provide an update regarding your ongoing regulatory compliance services with HL Associates.\n\nBest regards,\nHL Associates Compliance Operations`);
   const [isSendingEmail, setIsSendingEmail] = React.useState(false);
+
+  const handleUpdateClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingClient(true);
+    try {
+      const res = await fetch(`/api/clients/${currentClient.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: editCompany.trim(),
+          contactName: editContact.trim(),
+          contactTitle: editTitle.trim() || null,
+          email: editEmail.trim().toLowerCase(),
+          phone: editPhone.trim() || null,
+          address: editAddress.trim() || null,
+          taxId: editTaxId.trim() || null,
+          status: editStatus,
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setCurrentClient((prev: any) => ({ ...prev, ...json.data }));
+        setIsEditClientOpen(false);
+        setToast({
+          type: 'success',
+          title: 'Client Updated Successfully',
+          description: `Updated profile details for ${editCompany}.`,
+        });
+        router.refresh();
+      } else {
+        setToast({
+          type: 'error',
+          title: 'Update Failed',
+          description: json.error?.message || 'Failed to update client profile',
+        });
+      }
+    } catch (err: any) {
+      console.error('Update client error:', err);
+      setToast({ type: 'error', title: 'Error', description: err.message });
+    } finally {
+      setIsSavingClient(false);
+    }
+  };
 
   const handleRenewService = async () => {
     if (!renewingServiceId) return;
@@ -161,17 +219,36 @@ export function ClientDetailView({ client }: ClientDetailProps) {
         <div>
           <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              {client.companyName}
+              {currentClient.companyName}
             </h1>
-            <Badge variant="active">{client.status}</Badge>
+            <Badge variant="active">{currentClient.status}</Badge>
           </div>
           <div className="text-xs text-slate-500 font-medium mt-1">
-            Client ID: <span className="font-semibold text-slate-700">{client.clientNumber}</span> •
-            Primary Contact: <span className="font-semibold text-slate-700">{client.contactName}</span>
+            Client ID: <span className="font-semibold text-slate-700">{currentClient.clientNumber}</span> •
+            Primary Contact: <span className="font-semibold text-slate-700">{currentClient.contactName}</span>
+            {currentClient.contactTitle && <span className="text-slate-400"> ({currentClient.contactTitle})</span>}
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="secondary"
+            size="md"
+            className="flex-1 sm:flex-initial"
+            onClick={() => {
+              setEditCompany(currentClient.companyName || '');
+              setEditContact(currentClient.contactName || '');
+              setEditTitle(currentClient.contactTitle || '');
+              setEditEmail(currentClient.email || '');
+              setEditPhone(currentClient.phone || '');
+              setEditAddress(currentClient.address || '');
+              setEditTaxId(currentClient.taxId || '');
+              setEditStatus(currentClient.status || 'ACTIVE');
+              setIsEditClientOpen(true);
+            }}
+          >
+            <Edit className="w-4 h-4 mr-1.5 text-slate-600" /> Edit Details
+          </Button>
           <Button
             variant="secondary"
             size="md"
@@ -185,9 +262,9 @@ export function ClientDetailView({ client }: ClientDetailProps) {
             size="md"
             className="flex-1 sm:flex-initial"
             onClick={() => {
-              if (client.services?.[0]) {
-                setRenewingServiceId(client.services[0].id);
-                setRenewFee(Number(client.services[0].fee) || 200000);
+              if (currentClient.services?.[0]) {
+                setRenewingServiceId(currentClient.services[0].id);
+                setRenewFee(Number(currentClient.services[0].fee) || 200000);
               }
             }}
           >
@@ -552,6 +629,122 @@ export function ClientDetailView({ client }: ClientDetailProps) {
               isLoading={isSendingEmail}
             >
               <Send className="w-3.5 h-3.5 mr-1" /> Send Email Now
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Client Profile Modal */}
+      <Modal
+        isOpen={isEditClientOpen}
+        onClose={() => setIsEditClientOpen(false)}
+        title={`Edit Profile - ${currentClient.companyName}`}
+        size="lg"
+      >
+        <form onSubmit={handleUpdateClient} className="space-y-3.5 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Company Name *</label>
+              <Input
+                value={editCompany}
+                onChange={(e) => setEditCompany(e.target.value)}
+                required
+                placeholder="e.g. MedTech Solutions Ltd"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Account Status *</label>
+              <select
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value)}
+                className="flex h-9 w-full rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs text-slate-900 focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20"
+              >
+                <option value="ACTIVE">ACTIVE (In Good Standing)</option>
+                <option value="EXPIRING_SOON">EXPIRING_SOON (Audit Due)</option>
+                <option value="LAPSED">LAPSED (Non-Renewed)</option>
+                <option value="LEAD">LEAD (Pre-Conversion)</option>
+                <option value="INACTIVE">INACTIVE</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Primary Contact Name *</label>
+              <Input
+                value={editContact}
+                onChange={(e) => setEditContact(e.target.value)}
+                required
+                placeholder="e.g. Dr. Ramesh Patel"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Contact Title</label>
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="e.g. Head of Regulatory Affairs"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Official Email *</label>
+              <Input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                required
+                placeholder="contact@company.com"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Phone Number</label>
+              <Input
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                placeholder="+91 98200 12345"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">GSTIN / Tax ID</label>
+              <Input
+                value={editTaxId}
+                onChange={(e) => setEditTaxId(e.target.value)}
+                placeholder="e.g. GSTIN-24AABCM1234F1Z5"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Registered Address</label>
+              <Input
+                value={editAddress}
+                onChange={(e) => setEditAddress(e.target.value)}
+                placeholder="City, State, Country"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsEditClientOpen(false)}
+              disabled={isSavingClient}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isSavingClient}
+            >
+              Save Client Profile
             </Button>
           </div>
         </form>
