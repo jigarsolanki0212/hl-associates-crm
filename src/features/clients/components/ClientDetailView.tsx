@@ -377,10 +377,10 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
       <div className="bg-white rounded-lg border border-slate-200 p-1.5 sm:p-2 shadow-card flex items-center gap-1 overflow-x-auto no-scrollbar touch-scroll text-xs font-semibold">
         {[
           { id: 'overview', label: 'Overview', icon: ShieldCheck },
-          { id: 'services', label: `Active Services (${client.services?.length || 0})`, icon: Briefcase },
-          { id: 'proformas', label: `Proformas (${client.proformas?.length || 0})`, icon: FileText },
+          { id: 'services', label: `Active Services (${currentClient.services?.length || 0})`, icon: Briefcase },
+          { id: 'proformas', label: `Proformas (${currentClient.proformas?.length || 0})`, icon: FileText },
           { id: 'renewals', label: 'Renewals & Reminders', icon: RefreshCw },
-          { id: 'followups', label: `Follow-ups (${client.followUps?.length || 0})`, icon: Clock },
+          { id: 'followups', label: `Follow-ups (${currentClient.followUps?.length || 0})`, icon: Clock },
           { id: 'activity', label: 'Activity & Audit', icon: History },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -415,26 +415,26 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
                     onClick={() => setIsEmailModalOpen(true)}
                     className="text-[#0040e0] font-semibold hover:underline flex items-center gap-1 text-left"
                   >
-                    <Mail className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{client.email}</span>
+                    <Mail className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{currentClient.email}</span>
                   </button>
                 </div>
                 <div>
                   <div className="text-slate-500 font-semibold mb-0.5">Phone</div>
                   <div className="font-medium text-slate-800 flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {client.phone || 'N/A'}
+                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" /> {currentClient.phone || 'N/A'}
                   </div>
                 </div>
                 <div>
                   <div className="text-slate-500 font-semibold mb-0.5">Tax ID / GSTIN</div>
-                  <div className="font-mono text-slate-800">{client.taxId || 'GSTIN-27AABCH1234F1Z5'}</div>
+                  <div className="font-mono text-slate-800">{currentClient.taxId || 'GSTIN-24AABCH1234F1Z5'}</div>
                 </div>
                 <div>
                   <div className="text-slate-500 font-semibold mb-0.5">Assigned Rep</div>
-                  <div className="font-semibold text-slate-800">{client.assignedTo?.fullName || 'Unassigned'}</div>
+                  <div className="font-semibold text-slate-800">{currentClient.assignedTo?.fullName || 'Unassigned'}</div>
                 </div>
                 <div className="sm:col-span-2">
                   <div className="text-slate-500 font-semibold mb-0.5">Registered Address</div>
-                  <div className="text-slate-700">{client.address || 'Plot 42, Electronic City, Bengaluru 560100'}</div>
+                  <div className="text-slate-700">{currentClient.address || 'Address not registered'}</div>
                 </div>
               </div>
             </div>
@@ -446,22 +446,28 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
                 Compliance Health & Status
               </h2>
               <div className="space-y-3 text-xs">
-                {client.services?.map((s: any) => {
-                  const daysLeft = getDaysRemaining(s.expiryDate);
-                  return (
-                    <div key={s.id} className="p-3 rounded border border-slate-200 bg-slate-50/50">
-                      <div className="flex items-center justify-between font-bold text-slate-900 mb-1 gap-2">
-                        <span className="truncate">{s.serviceNameSnapshot}</span>
-                        <Badge variant={daysLeft <= 15 ? 'urgent' : daysLeft <= 30 ? 'actionNeeded' : 'normal'}>
-                          {daysLeft < 0 ? 'Expired' : `${daysLeft}d left`}
-                        </Badge>
+                {(!currentClient.services || currentClient.services.length === 0) ? (
+                  <div className="p-4 text-center text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                    No active compliance services registered yet.
+                  </div>
+                ) : (
+                  currentClient.services.map((s: any) => {
+                    const daysLeft = s.expiryDate ? getDaysRemaining(s.expiryDate) : 0;
+                    return (
+                      <div key={s.id} className="p-3 rounded border border-slate-200 bg-slate-50/50">
+                        <div className="flex items-center justify-between font-bold text-slate-900 mb-1 gap-2">
+                          <span className="truncate">{s.serviceNameSnapshot || 'Regulatory Service'}</span>
+                          <Badge variant={daysLeft <= 15 ? 'urgent' : daysLeft <= 30 ? 'actionNeeded' : 'normal'}>
+                            {daysLeft < 0 ? 'Expired' : `${daysLeft}d left`}
+                          </Badge>
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          Expires: <strong>{s.expiryDate ? formatFriendlyDate(s.expiryDate) : 'N/A'}</strong>
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-500">
-                        Expires: <strong>{formatFriendlyDate(s.expiryDate)}</strong>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>
@@ -495,46 +501,66 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
             </Button>
           </div>
           <div className="overflow-x-auto touch-scroll">
-            <table className="w-full text-left text-xs whitespace-nowrap min-w-[650px]">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-4">Service Name</th>
-                  <th className="py-3 px-4">Certificate #</th>
-                  <th className="py-3 px-4">Start Date</th>
-                  <th className="py-3 px-4">Expiry Date</th>
-                  <th className="py-3 px-4">Fee (Snapshotted)</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {client.services?.map((s: any) => (
-                  <tr key={s.id} className="hover:bg-slate-50">
-                    <td className="py-3.5 px-4 font-bold text-slate-900">{s.serviceNameSnapshot}</td>
-                    <td className="py-3.5 px-4 font-mono text-slate-600">{s.certificateNumber || 'N/A'}</td>
-                    <td className="py-3.5 px-4 text-slate-600">{formatFriendlyDate(s.startDate)}</td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-900">{formatFriendlyDate(s.expiryDate)}</td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-900">{formatCurrency(s.fee, s.currency)}</td>
-                    <td className="py-3.5 px-4">
-                      <Badge variant="active">{s.status}</Badge>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <Button
-                        onClick={() => {
-                          setRenewingServiceId(s.id);
-                          setRenewFee(Number(s.fee));
-                        }}
-                        variant="secondary"
-                        size="sm"
-                        className="text-xs"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5 mr-1" /> Renew
-                      </Button>
-                    </td>
+            {(!currentClient.services || currentClient.services.length === 0) ? (
+              <div className="p-8 text-center space-y-3">
+                <div className="w-10 h-10 rounded-full bg-blue-50 text-[#0040e0] flex items-center justify-center mx-auto">
+                  <Briefcase className="w-5 h-5" />
+                </div>
+                <div className="text-xs font-bold text-slate-800">No Service Engagements Active</div>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  This client does not have any regulatory compliance services registered yet.
+                </p>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsAddServiceOpen(true)}
+                  className="bg-[#0040e0] text-white"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Add First Service Engagement
+                </Button>
+              </div>
+            ) : (
+              <table className="w-full text-left text-xs whitespace-nowrap min-w-[650px]">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="py-3 px-4">Service Name</th>
+                    <th className="py-3 px-4">Certificate #</th>
+                    <th className="py-3 px-4">Start Date</th>
+                    <th className="py-3 px-4">Expiry Date</th>
+                    <th className="py-3 px-4">Fee</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {currentClient.services.map((s: any) => (
+                    <tr key={s.id} className="hover:bg-slate-50">
+                      <td className="py-3.5 px-4 font-bold text-slate-900">{s.serviceNameSnapshot || 'Regulatory Service'}</td>
+                      <td className="py-3.5 px-4 font-mono text-slate-600">{s.certificateNumber || 'N/A'}</td>
+                      <td className="py-3.5 px-4 text-slate-600">{s.startDate ? formatFriendlyDate(s.startDate) : 'N/A'}</td>
+                      <td className="py-3.5 px-4 font-semibold text-slate-900">{s.expiryDate ? formatFriendlyDate(s.expiryDate) : 'N/A'}</td>
+                      <td className="py-3.5 px-4 font-semibold text-slate-900">{formatCurrency(s.fee || 0, s.currency || 'INR')}</td>
+                      <td className="py-3.5 px-4">
+                        <Badge variant="active">{s.status || 'ACTIVE'}</Badge>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <Button
+                          onClick={() => {
+                            setRenewingServiceId(s.id);
+                            setRenewFee(Number(s.fee) || 200000);
+                          }}
+                          variant="secondary"
+                          size="sm"
+                          className="text-xs"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 mr-1" /> Renew
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
@@ -543,45 +569,51 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
       {activeTab === 'proformas' && (
         <div className="bg-white rounded-lg border border-slate-200 shadow-card overflow-hidden">
           <div className="overflow-x-auto touch-scroll">
-            <table className="w-full text-left text-xs whitespace-nowrap min-w-[600px]">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-4">Proforma #</th>
-                  <th className="py-3 px-4">Issue Date</th>
-                  <th className="py-3 px-4">Valid Until</th>
-                  <th className="py-3 px-4">Total Amount</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {client.proformas?.map((p: any) => (
-                  <tr key={p.id} className="hover:bg-slate-50">
-                    <td className="py-3.5 px-4 font-bold text-[#0040e0]">
-                      <Link href={`/proformas/${p.id}`} className="hover:underline">
-                        {p.proformaNumber}
-                      </Link>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600">{formatFriendlyDate(p.issueDate)}</td>
-                    <td className="py-3.5 px-4 text-slate-600">{formatFriendlyDate(p.validUntil)}</td>
-                    <td className="py-3.5 px-4 font-bold text-slate-900">{formatCurrency(p.totalAmount, p.currency)}</td>
-                    <td className="py-3.5 px-4">
-                      <Badge variant="proforma">{p.status}</Badge>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <a
-                        href={`/api/proformas/${p.id}/pdf`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#0040e0] hover:underline"
-                      >
-                        <Download className="w-3.5 h-3.5" /> PDF
-                      </a>
-                    </td>
+            {(!currentClient.proformas || currentClient.proformas.length === 0) ? (
+              <div className="p-8 text-center text-slate-500 text-xs">
+                No proforma invoices generated for this client yet.
+              </div>
+            ) : (
+              <table className="w-full text-left text-xs whitespace-nowrap min-w-[600px]">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="py-3 px-4">Proforma #</th>
+                    <th className="py-3 px-4">Issue Date</th>
+                    <th className="py-3 px-4">Valid Until</th>
+                    <th className="py-3 px-4">Total Amount</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {currentClient.proformas.map((p: any) => (
+                    <tr key={p.id} className="hover:bg-slate-50">
+                      <td className="py-3.5 px-4 font-bold text-[#0040e0]">
+                        <Link href={`/proformas/${p.id}`} className="hover:underline">
+                          {p.proformaNumber}
+                        </Link>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-600">{p.issueDate ? formatFriendlyDate(p.issueDate) : 'N/A'}</td>
+                      <td className="py-3.5 px-4 text-slate-600">{p.validUntil ? formatFriendlyDate(p.validUntil) : 'N/A'}</td>
+                      <td className="py-3.5 px-4 font-bold text-slate-900">{formatCurrency(p.totalAmount || 0, p.currency || 'INR')}</td>
+                      <td className="py-3.5 px-4">
+                        <Badge variant="proforma">{p.status}</Badge>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <a
+                          href={`/api/proformas/${p.id}/pdf`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-[#0040e0] hover:underline"
+                        >
+                          <Download className="w-3.5 h-3.5" /> PDF
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
@@ -593,33 +625,39 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
             Scheduled Renewal Reminder Pipeline
           </h2>
           <div className="space-y-4 text-xs">
-            {client.services?.map((s: any) => (
-              <div key={s.id} className="p-3.5 sm:p-4 rounded border border-slate-200 bg-slate-50/50 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="font-bold text-sm text-slate-900">{s.serviceNameSnapshot}</div>
-                  <Button
-                    onClick={() => handleSendRenewalReminder(s.id)}
-                    variant="primary"
-                    size="sm"
-                    className="w-full sm:w-auto"
-                  >
-                    <Send className="w-3.5 h-3.5 mr-1" /> Send Reminder Email
-                  </Button>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-200 text-center">
-                  {['SIXTY_DAYS', 'THIRTY_DAYS', 'SEVEN_DAYS', 'EXPIRY_DAY'].map((stage) => {
-                    const renewal = s.renewals?.find((r: any) => r.stage === stage);
-                    const isSent = renewal?.status === 'REMINDER_SENT';
-                    return (
-                      <div key={stage} className={`p-2 sm:p-2.5 rounded border ${isSent ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-white border-slate-200 text-slate-600'}`}>
-                        <div className="font-bold text-[10px] sm:text-[11px] uppercase truncate">{stage.replace('_', ' ')}</div>
-                        <div className="text-[10px] mt-0.5">{isSent ? '✓ Sent' : 'Pending'}</div>
-                      </div>
-                    );
-                  })}
-                </div>
+            {(!currentClient.services || currentClient.services.length === 0) ? (
+              <div className="p-4 text-center text-slate-500 bg-slate-50 rounded-lg">
+                No active services to track renewals.
               </div>
-            ))}
+            ) : (
+              currentClient.services.map((s: any) => (
+                <div key={s.id} className="p-3.5 sm:p-4 rounded border border-slate-200 bg-slate-50/50 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="font-bold text-sm text-slate-900">{s.serviceNameSnapshot}</div>
+                    <Button
+                      onClick={() => handleSendRenewalReminder(s.id)}
+                      variant="primary"
+                      size="sm"
+                      className="w-full sm:w-auto"
+                    >
+                      <Send className="w-3.5 h-3.5 mr-1" /> Send Reminder Email
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-200 text-center">
+                    {['SIXTY_DAYS', 'THIRTY_DAYS', 'SEVEN_DAYS', 'EXPIRY_DAY'].map((stage) => {
+                      const renewal = s.renewals?.find((r: any) => r.stage === stage);
+                      const isSent = renewal?.status === 'REMINDER_SENT';
+                      return (
+                        <div key={stage} className={`p-2 sm:p-2.5 rounded border ${isSent ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-white border-slate-200 text-slate-600'}`}>
+                          <div className="font-bold text-[10px] sm:text-[11px] uppercase truncate">{stage.replace('_', ' ')}</div>
+                          <div className="text-[10px] mt-0.5">{isSent ? '✓ Sent' : 'Pending'}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -631,15 +669,21 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
             Client Follow-ups & Tasks
           </h2>
           <div className="space-y-2.5 sm:space-y-3 text-xs">
-            {client.followUps?.map((f: any) => (
-              <div key={f.id} className="p-3 sm:p-3.5 rounded border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50/50">
-                <div>
-                  <div className="font-bold text-slate-900">{f.title}</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">Due: {formatFriendlyDate(f.dueDate)} • Type: {f.type}</div>
-                </div>
-                <Badge variant={f.status === 'COMPLETED' ? 'accepted' : 'actionNeeded'} className="self-start sm:self-auto">{f.status}</Badge>
+            {(!currentClient.followUps || currentClient.followUps.length === 0) ? (
+              <div className="p-4 text-center text-slate-500 bg-slate-50 rounded-lg">
+                No follow-up tasks scheduled for this client.
               </div>
-            ))}
+            ) : (
+              currentClient.followUps.map((f: any) => (
+                <div key={f.id} className="p-3 sm:p-3.5 rounded border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50/50">
+                  <div>
+                    <div className="font-bold text-slate-900">{f.title}</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">Due: {f.dueDate ? formatFriendlyDate(f.dueDate) : 'N/A'} • Type: {f.type}</div>
+                  </div>
+                  <Badge variant={f.status === 'COMPLETED' ? 'accepted' : 'actionNeeded'} className="self-start sm:self-auto">{f.status}</Badge>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -651,13 +695,17 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
             Client Audit History
           </h2>
           <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-            {client.activityLogs?.map((log: any, idx: number) => (
-              <div key={log.id} className="relative">
-                <div className={`absolute -left-6 top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white ${idx === 0 ? 'bg-[#0040e0]' : 'bg-slate-300'}`} />
-                <div className="text-xs font-bold text-slate-900">{log.description || log.action}</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">{log.user?.fullName ? `By ${log.user.fullName} • ` : ''}{formatFriendlyDate(log.createdAt)}</div>
-              </div>
-            ))}
+            {(!currentClient.activityLogs || currentClient.activityLogs.length === 0) ? (
+              <div className="text-slate-500 text-xs">No audit records logged yet.</div>
+            ) : (
+              currentClient.activityLogs.map((log: any, idx: number) => (
+                <div key={log.id} className="relative">
+                  <div className={`absolute -left-6 top-1 w-2.5 h-2.5 rounded-full ring-4 ring-white ${idx === 0 ? 'bg-[#0040e0]' : 'bg-slate-300'}`} />
+                  <div className="text-xs font-bold text-slate-900">{log.description || log.action}</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">{log.user?.fullName ? `By ${log.user.fullName} • ` : ''}{log.createdAt ? formatFriendlyDate(log.createdAt) : ''}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
