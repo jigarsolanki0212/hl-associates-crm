@@ -19,15 +19,10 @@ import {
   TrendingUp,
   PieChart as PieIcon,
   ShieldCheck,
-  Calendar,
-  Layers,
   FileSpreadsheet,
-  CheckCircle2,
   DollarSign,
   Activity,
   SlidersHorizontal,
-  Clock,
-  Filter,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -133,15 +128,24 @@ export function DashboardView({ metrics }: DashboardViewProps) {
   const maxServiceDemand = Math.max(...metrics.serviceDemand.map((s) => s.count), 1);
   const maxMonthlyRevenue = Math.max(...metrics.monthlyRevenueTrend.map((m) => m.value), 1);
 
+  // SVG Circular Donut Math: radius = 40, circumference = 2 * PI * 40 = 251.327
+  const CIRCLE_CIRCUMFERENCE = 251.327;
+  let cumulativeOffset = 0;
+
   return (
     <div className="space-y-4 sm:space-y-6 pb-8">
       {/* Toast Notification */}
       <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* Top Header & Export Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-card">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Executive CRM Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Executive CRM Dashboard</h1>
+            <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#e5eeff] text-[#0040e0]">
+              Realtime Database
+            </span>
+          </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Real-time compliance operations, proforma financials, and sales conversion analytics.
           </p>
@@ -149,13 +153,13 @@ export function DashboardView({ metrics }: DashboardViewProps) {
 
         <div className="flex items-center gap-2 flex-wrap">
           {/* Timeframe selector */}
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-semibold shadow-xs">
+          <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-semibold shadow-xs">
             {(['7d', '30d', '90d', 'all'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTimeframe(t)}
-                className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
-                  timeframe === t ? 'bg-[#041627] text-white font-bold' : 'text-slate-600 hover:text-slate-900'
+                className={`px-2.5 py-1 rounded transition-all cursor-pointer ${
+                  timeframe === t ? 'bg-[#041627] text-white font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {t === 'all' ? '2026 YTD' : t.toUpperCase()}
@@ -182,9 +186,9 @@ export function DashboardView({ metrics }: DashboardViewProps) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 rounded transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 isActive
-                  ? 'bg-[#e5eeff] text-[#0040e0] font-bold shadow-xs'
+                  ? 'bg-[#0040e0] text-white font-bold shadow-xs'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100'
               }`}
             >
@@ -229,67 +233,125 @@ export function DashboardView({ metrics }: DashboardViewProps) {
 
           {/* Inquiry Source & Service Demand Visual Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
-            {/* Left: Inquiry Source Donut Graphic (5 cols) */}
+            {/* Left: Beautiful Circular Donut Chart (5 cols) */}
             <div className="lg:col-span-5 bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm sm:text-base font-bold text-slate-900">Lead Source Attribution</h3>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900">Lead Source Attribution</h3>
+                  <p className="text-[11px] text-slate-500">Inquiry channels & acquisition ROI</p>
+                </div>
                 <Badge variant="outline">Channel ROI</Badge>
               </div>
 
-              <div className="flex flex-col items-center justify-center my-2 sm:my-4">
-                <div className="relative w-36 h-36 sm:w-44 sm:h-44 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-45" viewBox="0 0 100 100">
-                    <rect x="15" y="15" width="70" height="70" fill="none" stroke="#041627" strokeWidth="12" strokeDasharray="60 140" strokeDashoffset="0" />
-                    <rect x="15" y="15" width="70" height="70" fill="none" stroke="#0040e0" strokeWidth="12" strokeDasharray="45 155" strokeDashoffset="-60" />
-                    <rect x="15" y="15" width="70" height="70" fill="none" stroke="#ca8a04" strokeWidth="12" strokeDasharray="25 175" strokeDashoffset="-105" />
-                    <rect x="15" y="15" width="70" height="70" fill="none" stroke="#e2e8f0" strokeWidth="12" strokeDasharray="20 180" strokeDashoffset="-130" />
+              {/* Circular SVG Donut */}
+              <div className="flex flex-col items-center justify-center my-3">
+                <div className="relative w-40 h-40 sm:w-48 sm:h-48 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    {/* Background Ring */}
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="transparent"
+                      stroke="#f1f5f9"
+                      strokeWidth="10"
+                    />
+
+                    {/* Colored Segments */}
+                    {metrics.sourceStats.map((item) => {
+                      const strokeDash = (item.percent / 100) * CIRCLE_CIRCUMFERENCE;
+                      const strokeGap = CIRCLE_CIRCUMFERENCE - strokeDash;
+                      const currentOffset = cumulativeOffset;
+                      cumulativeOffset += strokeDash;
+
+                      return (
+                        <circle
+                          key={item.label}
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          fill="transparent"
+                          stroke={item.color}
+                          strokeWidth="10"
+                          strokeDasharray={`${strokeDash} ${strokeGap}`}
+                          strokeDashoffset={-currentOffset}
+                          className="transition-all duration-700 hover:opacity-90"
+                        />
+                      );
+                    })}
                   </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <span className="text-lg sm:text-xl font-bold text-slate-900">{metrics.totalInquiries}</span>
-                    <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">Inquiries</span>
+
+                  {/* Centered Total */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                    <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
+                      {metrics.totalInquiries}
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
+                      Inquiries
+                    </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-2 mt-4 sm:mt-6 w-full max-w-[280px]">
+                {/* Clean Spaced Legend */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 mt-5 w-full">
                   {metrics.sourceStats.map((item) => (
-                    <div key={item.label} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span className="w-2.5 h-2.5 rounded-xs shrink-0" style={{ backgroundColor: item.color }} />
-                        <span className="text-slate-600 truncate">{item.label}</span>
+                    <div
+                      key={item.label}
+                      className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-100 text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="w-3 h-3 rounded-full shrink-0 shadow-2xs"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="text-slate-700 font-medium truncate">{item.label}</span>
                       </div>
-                      <span className="font-semibold text-slate-900">{item.percent}%</span>
+                      <span className="font-bold text-slate-900 ml-2 shrink-0">{item.percent}%</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Right: Service Demand Bar Chart (7 cols) */}
+            {/* Right: Modern Service Demand Bar Chart (7 cols) */}
             <div className="lg:col-span-7 bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900">Service Category Demand</h3>
-                  <span className="text-xs text-slate-500 font-medium">Active Engagements</span>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900">Service Category Demand</h3>
+                    <p className="text-[11px] text-slate-500">Active client compliance distribution</p>
+                  </div>
+                  <span className="text-xs font-semibold text-[#0040e0] bg-[#e5eeff] px-2.5 py-1 rounded">
+                    {metrics.serviceDemand.reduce((sum, s) => sum + s.count, 0)} Total Services
+                  </span>
                 </div>
-                <div className="border-b border-slate-100 mt-2 mb-4 sm:mb-6" />
+                <div className="border-b border-slate-100 mt-2 mb-4" />
               </div>
 
-              <div className="h-44 sm:h-48 flex items-end justify-between gap-2 sm:gap-4 px-1 sm:px-6">
+              {/* Bar Visualization Container */}
+              <div className="h-52 flex items-end justify-between gap-2 sm:gap-4 px-2 sm:px-4">
                 {metrics.serviceDemand.map((service) => {
                   const heightPercent = Math.round((service.count / maxServiceDemand) * 100);
                   return (
-                    <div key={service.name} className="flex-1 flex flex-col items-center gap-1.5 sm:gap-2 group">
-                      <div className="w-full flex justify-center items-end h-32 sm:h-36">
+                    <div key={service.name} className="flex-1 flex flex-col items-center gap-2 group min-w-0">
+                      {/* Count Badge Above Bar */}
+                      <span className="text-xs font-extrabold text-slate-900 group-hover:text-[#0040e0] transition-colors">
+                        {service.count}
+                      </span>
+
+                      {/* Bar Column */}
+                      <div className="w-full flex justify-center items-end h-32 sm:h-36 bg-slate-50 rounded-t p-1">
                         <div
-                          className="w-8 sm:w-16 bg-[#e5eeff] group-hover:bg-[#0040e0] transition-all rounded-t flex items-start justify-center pt-1.5 sm:pt-2 shadow-xs"
-                          style={{ height: `${Math.max(18, heightPercent)}%` }}
-                        >
-                          <span className="text-[10px] sm:text-[11px] font-bold text-[#0040e0] group-hover:text-white transition-colors">
-                            {service.count}
-                          </span>
-                        </div>
+                          className="w-full max-w-[48px] bg-gradient-to-t from-[#0040e0] to-[#38bdf8] group-hover:from-[#041627] group-hover:to-[#0040e0] transition-all rounded-t flex items-start justify-center shadow-xs"
+                          style={{ height: `${Math.max(16, heightPercent)}%` }}
+                        />
                       </div>
-                      <span className="text-[10px] sm:text-[11px] font-semibold text-slate-600 text-center leading-tight truncate w-full">
+
+                      {/* Service Label */}
+                      <span
+                        className="text-[10px] sm:text-[11px] font-semibold text-slate-600 group-hover:text-slate-900 text-center leading-tight truncate w-full"
+                        title={service.name}
+                      >
                         {service.name}
                       </span>
                     </div>
@@ -490,7 +552,7 @@ export function DashboardView({ metrics }: DashboardViewProps) {
                   <div key={step.stage} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-slate-800">
-                        {idx + 1}. {step.stage}
+                        {step.stage}
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-900">{step.count} entries</span>
