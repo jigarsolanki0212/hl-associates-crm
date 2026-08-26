@@ -185,43 +185,65 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
   animation: shimmer 1.6s infinite linear;
 }
 
-/* Mobile Landscape Optimizations (height < 550px) */
-@media (orientation: landscape) and (max-height: 550px) {
-  .landscape-compact-header {
-    height: 44px !important;
-  }
-  .landscape-compact-padding {
-    padding-top: 0.25rem !important;
-    padding-bottom: 0.25rem !important;
-  }
-  .landscape-modal-body {
-    max-height: calc(100dvh - 2.5rem) !important;
-  }
-}
+/* Responsive Media Queries & Screen Adaptations */
 
-/* Extra small screens (iPhone SE, 320px - 360px) */
-@media (max-width: 360px) {
+/* Extra small mobile (320px - 375px) */
+@media (max-width: 375px) {
   .xs-compact-grid {
     grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
   }
   .xs-text-tight {
-    font-size: 0.7rem !important;
+    font-size: 0.75rem !important;
   }
 }
 
-/* Tablets (iPad, 768px - 1024px) */
-@media (min-width: 768px) and (max-width: 1024px) {
+/* Tablet Portrait (600px - 899px) */
+@media (min-width: 600px) and (max-width: 899px) {
   .tablet-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
-/* Large Screens & Ultra-wide (1920px+) */
+/* Tablet Landscape & iPad Pro (900px - 1199px) */
+@media (min-width: 900px) and (max-width: 1199px) {
+  .tablet-landscape-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Landscape orientation on mobile devices (height < 550px) */
+@media (orientation: landscape) and (max-height: 550px) {
+  .landscape-compact-header {
+    height: 48px !important;
+  }
+  .landscape-compact-padding {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  .landscape-modal-body {
+    max-height: calc(100dvh - 2rem) !important;
+  }
+}
+
+/* Ultra-wide Displays (1920px+) */
 @media (min-width: 1920px) {
   .ultrawide-container {
-    max-width: 1800px !important;
+    max-width: 1720px !important;
     margin-left: auto;
     margin-right: auto;
+  }
+}
+
+/* Prevent unwanted layout shifts on orientation change */
+@media (orientation: portrait) {
+  html {
+    touch-action: pan-x pan-y;
+  }
+}
+
+@media (orientation: landscape) {
+  html {
+    touch-action: pan-x pan-y;
   }
 }
 
