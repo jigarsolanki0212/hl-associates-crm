@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { formatFriendlyDate } from '@/lib/dates/timezone';
 import { TableSkeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
 
 interface InquiryItem {
   id: string;
@@ -26,11 +27,18 @@ interface InquiryItem {
   companyName: string;
   contactName: string;
   source: string;
+  serviceScope?: string | null;
   status: string;
   createdAt: string;
-  service?: { name: string } | null;
-  serviceScope?: string | null;
-  assignedTo?: { id: string; fullName: string; avatarUrl?: string | null } | null;
+  service?: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
+  assignedTo?: {
+    id: string;
+    fullName: string;
+  } | null;
 }
 
 interface InquiriesViewProps {
@@ -54,6 +62,7 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
   const [status, setStatus] = React.useState('');
   const [serviceId, setServiceId] = React.useState('');
   const [page, setPage] = React.useState(1);
+  const [limit, setLimit] = React.useState(10);
 
   // Debounce search input to avoid redundant network thrashing
   React.useEffect(() => {
@@ -72,6 +81,7 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
       if (status) params.set('status', status);
       if (serviceId) params.set('serviceId', serviceId);
       params.set('page', String(page));
+      params.set('limit', String(limit));
 
       const res = await fetch(`/api/inquiries?${params.toString()}`, { signal });
       const json = await res.json();
@@ -87,7 +97,7 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearch, status, serviceId, page]);
+  }, [debouncedSearch, status, serviceId, page, limit]);
 
   React.useEffect(() => {
     const controller = new AbortController();
@@ -365,30 +375,16 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
         </div>
 
         {/* Pagination Footer */}
-        <div className="p-3 sm:p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <div>
-            Showing 1 to {inquiries.length} of {pagination.total || (stats?.total ?? inquiries.length)} results
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Previous
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={page >= pagination.totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next <ChevronRight className="w-3.5 h-3.5 ml-1" />
-            </Button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={page}
+          totalPages={pagination.totalPages || 1}
+          totalItems={pagination.total || inquiries.length}
+          pageSize={limit}
+          onPageChange={setPage}
+          onPageSizeChange={setLimit}
+          pageSizeOptions={[10, 25, 50]}
+          itemLabel="inquiries"
+        />
       </div>
 
       {/* New Inquiry Modal */}

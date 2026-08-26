@@ -23,6 +23,7 @@ import { formatFriendlyDate } from '@/lib/dates/timezone';
 import { getDaysRemaining } from '@/lib/dates/expiryCalculator';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { TableSkeleton, Skeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
 
 interface ClientItem {
   id: string;
@@ -33,8 +34,12 @@ interface ClientItem {
   email: string;
   phone?: string | null;
   status: string;
-  assignedTo?: { id: string; fullName: string; avatarUrl?: string | null } | null;
-  services: {
+  assignedTo?: {
+    id: string;
+    fullName: string;
+    avatarUrl?: string | null;
+  } | null;
+  services?: {
     id: string;
     serviceNameSnapshot: string;
     expiryDate: string;
@@ -60,6 +65,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
   const [serviceId, setServiceId] = React.useState('');
   const [status, setStatus] = React.useState('');
   const [page, setPage] = React.useState(1);
+  const [limit, setLimit] = React.useState(10);
 
   // Debounce search query
   React.useEffect(() => {
@@ -88,6 +94,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
       if (status) params.set('status', status);
       if (serviceId) params.set('serviceId', serviceId);
       params.set('page', String(page));
+      params.set('limit', String(limit));
 
       const res = await fetch(`/api/clients?${params.toString()}`, { signal });
       const json = await res.json();
@@ -103,7 +110,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearch, status, serviceId, page]);
+  }, [debouncedSearch, status, serviceId, page, limit]);
 
   React.useEffect(() => {
     const controller = new AbortController();
@@ -431,30 +438,16 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
         </div>
 
         {/* Pagination Footer */}
-        <div className="p-3 sm:p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <div>
-            Showing 1 to {clients.length} of {pagination.total || (stats?.totalClients ?? clients.length)} entries
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={page >= pagination.totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={page}
+          totalPages={pagination.totalPages || 1}
+          totalItems={pagination.total || clients.length}
+          pageSize={limit}
+          onPageChange={setPage}
+          onPageSizeChange={setLimit}
+          pageSizeOptions={[10, 25, 50]}
+          itemLabel="clients"
+        />
       </div>
 
       {/* New Client Modal */}
