@@ -34,9 +34,18 @@ import { Edit, Edit3 } from 'lucide-react';
 interface ClientDetailProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: any;
+  availableServices?: Array<{
+    id: string;
+    name: string;
+    code: string;
+    suggestedPriceMin?: number | null;
+    suggestedPriceMax?: number | null;
+    defaultDuration?: number | null;
+    description?: string | null;
+  }>;
 }
 
-export function ClientDetailView({ client }: ClientDetailProps) {
+export function ClientDetailView({ client, availableServices = [] }: ClientDetailProps) {
   const router = useRouter();
   const [currentClient, setCurrentClient] = React.useState(client);
   const [activeTab, setActiveTab] = React.useState<
@@ -55,12 +64,90 @@ export function ClientDetailView({ client }: ClientDetailProps) {
   const [editStatus, setEditStatus] = React.useState(client.status || 'ACTIVE');
   const [isSavingClient, setIsSavingClient] = React.useState(false);
 
+  // Add New Service Engagement Modal State
+  const [isAddServiceOpen, setIsAddServiceOpen] = React.useState(false);
+  const [newServiceId, setNewServiceId] = React.useState(availableServices[0]?.id || '');
+  const [newServiceStartDate, setNewServiceStartDate] = React.useState(
+    new Date().toISOString().slice(0, 10)
+  );
+  const [newServiceDuration, setNewServiceDuration] = React.useState(12);
+  const [newServiceFee, setNewServiceFee] = React.useState(
+    availableServices[0]?.suggestedPriceMin || 200000
+  );
+  const [newServiceScope, setNewServiceScope] = React.useState('');
+  const [newServiceRemarks, setNewServiceRemarks] = React.useState('');
+  const [isAddingService, setIsAddingService] = React.useState(false);
+
   // Renew Service Modal
   const [renewingServiceId, setRenewingServiceId] = React.useState<string | null>(null);
   const [renewDuration, setRenewDuration] = React.useState(12);
   const [renewFee, setRenewFee] = React.useState(200000);
   const [isRenewing, setIsRenewing] = React.useState(false);
   const [toast, setToast] = React.useState<ToastMessage | null>(null);
+
+  // Auto-fill price & duration when selected service changes
+  const handleServiceChange = (id: string) => {
+    setNewServiceId(id);
+    const found = availableServices.find((s) => s.id === id);
+    if (found) {
+      if (found.suggestedPriceMin) setNewServiceFee(found.suggestedPriceMin);
+      if (found.defaultDuration) setNewServiceDuration(found.defaultDuration);
+    }
+  };
+
+  const handleAddServiceEngagement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newServiceId) {
+      setToast({ type: 'error', title: 'Service Required', description: 'Please select a regulatory service.' });
+      return;
+    }
+
+    setIsAddingService(true);
+    try {
+      const selectedObj = availableServices.find((s) => s.id === newServiceId);
+      const res = await fetch(`/api/clients/${currentClient.id}/services`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceId: newServiceId,
+          serviceNameSnapshot: selectedObj?.name || 'Regulatory Compliance Service',
+          startDate: newServiceStartDate,
+          durationMonths: Number(newServiceDuration),
+          fee: Number(newServiceFee),
+          serviceScope: newServiceScope.trim() || undefined,
+          remarks: newServiceRemarks.trim() || undefined,
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setIsAddServiceOpen(false);
+        setNewServiceScope('');
+        setNewServiceRemarks('');
+        setCurrentClient((prev: any) => ({
+          ...prev,
+          services: [json.data, ...(prev.services || [])],
+        }));
+        setToast({
+          type: 'success',
+          title: 'New Service Engagement Added',
+          description: `"${json.data.serviceNameSnapshot}" engagement activated for ${currentClient.companyName}. Renewal milestones scheduled.`,
+        });
+        router.refresh();
+      } else {
+        setToast({
+          type: 'error',
+          title: 'Failed to Add Service',
+          description: json.error?.message || 'Failed to add service engagement',
+        });
+      }
+    } catch (err: any) {
+      console.error('Add service error:', err);
+      setToast({ type: 'error', title: 'Error', description: err.message });
+    } finally {
+      setIsAddingService(false);
+    }
+  };
 
   // Compose Email Modal
   const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
@@ -232,6 +319,19 @@ export function ClientDetailView({ client }: ClientDetailProps) {
 
         <div className="flex items-center gap-2 flex-wrap">
           <Button
+            variant="primary"
+            size="md"
+            className="flex-1 sm:flex-initial bg-[#0040e0] hover:bg-[#0030b0] text-white"
+            onClick={() => {
+              if (availableServices.length > 0) {
+                handleServiceChange(availableServices[0].id);
+              }
+              setIsAddServiceOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-1.5" /> Add Service Engagement
+          </Button>
+          <Button
             variant="secondary"
             size="md"
             className="flex-1 sm:flex-initial"
@@ -258,7 +358,7 @@ export function ClientDetailView({ client }: ClientDetailProps) {
             <Mail className="w-4 h-4 mr-1.5 text-[#0040e0]" /> Send Email
           </Button>
           <Button
-            variant="primary"
+            variant="secondary"
             size="md"
             className="flex-1 sm:flex-initial"
             onClick={() => {
@@ -268,7 +368,7 @@ export function ClientDetailView({ client }: ClientDetailProps) {
               }
             }}
           >
-            <RefreshCw className="w-4 h-4 mr-1.5" /> Renew Engagement
+            <RefreshCw className="w-4 h-4 mr-1.5" /> Renew
           </Button>
         </div>
       </div>
@@ -371,10 +471,28 @@ export function ClientDetailView({ client }: ClientDetailProps) {
       {/* Tab 2: Services */}
       {activeTab === 'services' && (
         <div className="bg-white rounded-lg border border-slate-200 shadow-card overflow-hidden">
-          <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-100">
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Active Regulatory Licenses & Services
-            </h2>
+          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                Active Regulatory Licenses & Service Engagements
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Manage all concurrent regulatory services, certificates, validity timelines, and milestones for {currentClient.companyName}.
+              </p>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                if (availableServices.length > 0) {
+                  handleServiceChange(availableServices[0].id);
+                }
+                setIsAddServiceOpen(true);
+              }}
+              className="shrink-0 bg-[#0040e0] text-white"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" /> Add New Service Engagement
+            </Button>
           </div>
           <div className="overflow-x-auto touch-scroll">
             <table className="w-full text-left text-xs whitespace-nowrap min-w-[650px]">
@@ -745,6 +863,121 @@ export function ClientDetailView({ client }: ClientDetailProps) {
               isLoading={isSavingClient}
             >
               Save Client Profile
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Add New Service Engagement Modal */}
+      <Modal
+        isOpen={isAddServiceOpen}
+        onClose={() => setIsAddServiceOpen(false)}
+        title={`Add Service Engagement - ${currentClient.companyName}`}
+        size="lg"
+      >
+        <form onSubmit={handleAddServiceEngagement} className="space-y-3.5 text-xs">
+          <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-lg text-slate-700 space-y-1">
+            <div className="font-bold text-blue-900 flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>Multi-Service Lifecycle for Existing Client</span>
+            </div>
+            <p className="text-[11px] text-slate-600">
+              Activate an additional regulatory compliance engagement. This service will run concurrently with existing licenses and automatically generate scheduled 60-day and 30-day renewal alerts.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <label className="block font-semibold text-slate-700 mb-1">Select Regulatory Service *</label>
+              <select
+                value={newServiceId}
+                onChange={(e) => handleServiceChange(e.target.value)}
+                required
+                className="flex h-9 w-full rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs text-slate-900 focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20"
+              >
+                {availableServices.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.code}) - ₹{(s.suggestedPriceMin || 200000).toLocaleString('en-IN')}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Commencement / Start Date *</label>
+              <Input
+                type="date"
+                value={newServiceStartDate}
+                onChange={(e) => setNewServiceStartDate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Validity Duration *</label>
+              <select
+                value={newServiceDuration}
+                onChange={(e) => setNewServiceDuration(Number(e.target.value))}
+                className="flex h-9 w-full rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs text-slate-900 focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20"
+              >
+                <option value={6}>6 Months</option>
+                <option value={12}>12 Months (1 Year)</option>
+                <option value={24}>24 Months (2 Years)</option>
+                <option value={36}>36 Months (3 Years)</option>
+                <option value={60}>60 Months (5 Years)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Commercial Engagement Fee (INR) *</label>
+              <Input
+                type="number"
+                value={newServiceFee}
+                onChange={(e) => setNewServiceFee(Number(e.target.value))}
+                required
+                min="0"
+                placeholder="200000"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Service Scope / Product Classification</label>
+              <Input
+                value={newServiceScope}
+                onChange={(e) => setNewServiceScope(e.target.value)}
+                placeholder="e.g. Class IIb Catheter & Stent regulatory filings"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block font-semibold text-slate-700 mb-1">Internal Milestone / Compliance Remarks</label>
+              <Textarea
+                value={newServiceRemarks}
+                onChange={(e) => setNewServiceRemarks(e.target.value)}
+                placeholder="e.g. Client expanded product lines 6 months after initial ISO engagement."
+                rows={2}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsAddServiceOpen(false)}
+              disabled={isAddingService}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isAddingService}
+              className="bg-[#0040e0] text-white"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" /> Activate Engagement
             </Button>
           </div>
         </form>
