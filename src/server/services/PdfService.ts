@@ -22,10 +22,10 @@ export class PdfService {
     });
 
     const companyName = companySettings?.companyName || 'HL Associates';
-    const companyAddress = companySettings?.address || '100 Compliance Tower, Nariman Point, Mumbai 400021';
-    const companyTaxId = companySettings?.taxId || 'GSTIN-27AABCH1234F1Z5';
-    const companyEmail = companySettings?.email || 'contact@hlassociates.com';
-    const companyPhone = companySettings?.phone || '+91 (022) 2842-1933';
+    const companyAddress = companySettings?.address || '602, 603 & 606 Rashmi Growth Hub, Odhav to Vastral Road, S.P. Ring Road, Odhav, Ahmedabad, Gujarat 382415';
+    const companyTaxId = companySettings?.taxId || 'GSTIN-24AABCH1234F1Z5';
+    const companyEmail = companySettings?.email || 'bdm@hl-associates.in';
+    const companyPhone = companySettings?.phone || '+91 98988 96585';
 
     const clientName = proforma.client?.companyName || proforma.inquiry?.companyName || 'Valued Client';
     const contactName = proforma.client?.contactName || proforma.inquiry?.contactName || 'Authorized Signatory';
@@ -230,7 +230,7 @@ export class PdfService {
           <strong>Terms & Conditions:</strong><br/>
           1. This proforma invoice is valid until ${formatFriendlyDate(proforma.validUntil)}.<br/>
           2. Regulatory timelines commence upon receipt of required technical dossiers and advance payment.<br/>
-          3. Bank Details: HL Associates • HDFC Bank Nariman Point • A/C: 50200012345678 • IFSC: HDFC0000001
+          3. Bank Details: HL Associates • HDFC Bank Odhav Branch • A/C: 50200012345678 • IFSC: HDFC0000123
         </div>
       </body>
       </html>
