@@ -138,12 +138,7 @@ export function DashboardView({ metrics }: DashboardViewProps) {
       {/* Top Header & Export Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-card">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Executive CRM Dashboard</h1>
-            <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#e5eeff] text-[#0040e0]">
-              Realtime Database
-            </span>
-          </div>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Executive CRM Dashboard</h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Real-time compliance operations, proforma financials, and sales conversion analytics.
           </p>
