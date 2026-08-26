@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionCookie = request.cookies.get('hl_session')?.value;
 
-  const publicRoutes = ['/login', '/forgot-password', '/reset-password'];
+  const publicRoutes = ['/login'];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
   const isApiRoute = pathname.startsWith('/api/');
   const isStaticAsset =
