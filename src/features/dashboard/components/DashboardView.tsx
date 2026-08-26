@@ -161,7 +161,7 @@ export function DashboardView({ metrics }: DashboardViewProps) {
           </div>
 
           <Button onClick={handleExportExecutiveReport} variant="secondary" size="md" className="shrink-0">
-            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-700" /> Export Excel (.xlsx)
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-[#0040e0]" /> Export Excel (.xlsx)
           </Button>
         </div>
       </div>
@@ -495,7 +495,7 @@ export function DashboardView({ metrics }: DashboardViewProps) {
               </div>
 
               <Button onClick={handleExportProformas} variant="secondary" size="sm">
-                <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-700" /> Export Proformas (.xlsx)
+                <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-[#0040e0]" /> Export Proformas (.xlsx)
               </Button>
             </div>
 

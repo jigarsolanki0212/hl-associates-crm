@@ -167,7 +167,7 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button onClick={handleExportExcel} variant="secondary" size="md" className="flex-1 sm:flex-initial">
-            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-700" /> Export Excel
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-[#0040e0]" /> Export Excel
           </Button>
           <Button onClick={() => setIsNewModalOpen(true)} variant="primary" size="md" className="flex-1 sm:flex-initial">
             <Plus className="w-4 h-4 mr-1.5" /> New Inquiry

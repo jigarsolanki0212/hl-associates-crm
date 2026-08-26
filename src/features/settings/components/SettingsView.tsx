@@ -486,7 +486,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
                 size="sm"
                 onClick={handleSaveSettings}
                 isLoading={isSaving}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-[#0040e0] hover:bg-[#0030b0] text-white"
               >
                 <Save className="w-3.5 h-3.5 mr-1" /> Save All Changes
               </Button>
@@ -840,12 +840,12 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
                       u.email === 'admin@hlassociates.com' ? 'opacity-85 cursor-default' : 'cursor-pointer'
                     } ${
                       u.isActive
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                        ? 'bg-blue-50 text-[#0040e0] border-blue-200 hover:bg-blue-100'
                         : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
                     }`}
                     title={u.email === 'admin@hlassociates.com' ? 'Primary Admin account is always active' : 'Click to toggle user status'}
                   >
-                    {u.isActive ? <UserCheck className="w-3 h-3 text-emerald-600" /> : <UserX className="w-3 h-3 text-slate-500" />}
+                    {u.isActive ? <UserCheck className="w-3 h-3 text-[#0040e0]" /> : <UserX className="w-3 h-3 text-slate-500" />}
                     <span>{u.isActive ? 'Active' : 'Suspended'}</span>
                   </button>
 
@@ -899,7 +899,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
                 variant="primary"
                 size="sm"
                 isLoading={isSaving}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-[#0040e0] hover:bg-[#0030b0] text-white"
               >
                 Save Settings Now
               </Button>

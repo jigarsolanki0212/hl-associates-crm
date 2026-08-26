@@ -289,9 +289,9 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
                   title={service.isActive ? 'Disable Service' : 'Enable Service'}
                 >
                   {service.isActive ? (
-                    <Ban className="w-3.5 h-3.5 text-red-500" />
+                    <Ban className="w-3.5 h-3.5 text-slate-500" />
                   ) : (
-                    <Play className="w-3.5 h-3.5 text-emerald-600" />
+                    <Play className="w-3.5 h-3.5 text-[#0040e0]" />
                   )}
                 </Button>
               </div>

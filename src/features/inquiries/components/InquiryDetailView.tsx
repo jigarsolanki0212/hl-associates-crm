@@ -257,7 +257,7 @@ export function InquiryDetailView({ inquiry, services }: InquiryDetailProps) {
           {currentInquiry.status === 'CONVERTED' && currentInquiry.convertedClient && (
             <Link href={`/clients/${currentInquiry.convertedClient.id}`}>
               <Button variant="primary" size="md">
-                <CheckCircle2 className="w-4 h-4 mr-1.5 text-emerald-400" /> View Active Client
+                <CheckCircle2 className="w-4 h-4 mr-1.5 text-white" /> View Active Client
               </Button>
             </Link>
           )}

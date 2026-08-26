@@ -225,7 +225,7 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
 
         <div className="flex items-center gap-2 flex-wrap">
           <Button onClick={handleExportExcel} variant="secondary" size="md" className="flex-1 sm:flex-initial">
-            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-700" /> Export Excel
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-[#0040e0]" /> Export Excel
           </Button>
           <Button onClick={handleTriggerBackgroundJob} variant="primary" size="md" isLoading={isProcessing} className="flex-1 sm:flex-initial">
             <Play className="w-4 h-4 mr-1.5" /> Run Automated Scan

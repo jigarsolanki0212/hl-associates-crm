@@ -14,11 +14,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       'inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focusBlue disabled:opacity-50 disabled:pointer-events-none rounded select-none cursor-pointer';
 
     const variants = {
-      primary: 'bg-brand-navy text-white hover:bg-brand-lightNavy active:bg-brand-dark shadow-sm',
+      primary: 'bg-[#0040e0] text-white hover:bg-[#0030b0] active:bg-[#002590] shadow-sm',
       secondary: 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 shadow-sm',
-      outline: 'border border-brand-navy text-brand-navy bg-transparent hover:bg-surface-hover active:bg-blue-100',
-      tertiary: 'text-brand-navy hover:text-brand-blue hover:underline bg-transparent p-0',
-      destructive: 'bg-destructive text-white hover:bg-red-700 active:bg-red-800 shadow-sm',
+      outline: 'border border-[#0040e0] text-[#0040e0] bg-transparent hover:bg-blue-50 active:bg-blue-100',
+      tertiary: 'text-[#0040e0] hover:text-[#0030b0] hover:underline bg-transparent p-0',
+      destructive: 'bg-[#041627] text-white hover:bg-slate-800 active:bg-slate-900 shadow-sm',
       ghost: 'bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200',
     };
 
