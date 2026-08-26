@@ -193,19 +193,6 @@ export function Sidebar({
 
       {/* Bottom Footer Actions */}
       <div className="p-3 border-t border-slate-100 space-y-1 shrink-0 pb-safe">
-        <Link
-          href="/support"
-          onClick={handleLinkClick}
-          className={cn(
-            'flex items-center gap-3 px-3 py-2 rounded text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors min-h-[36px] sm:min-h-0',
-            isCollapsed && !isMobileDrawer && 'justify-center px-0'
-          )}
-          title={isCollapsed && !isMobileDrawer ? 'Support' : undefined}
-        >
-          <HelpCircle className="w-4 h-4 text-slate-500 shrink-0" />
-          {(!isCollapsed || isMobileDrawer) && <span>Support</span>}
-        </Link>
-
         <button
           onClick={async () => {
             await fetch('/api/auth/logout', { method: 'POST' });

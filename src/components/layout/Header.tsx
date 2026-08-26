@@ -106,15 +106,6 @@ export function Header({
           )}
         </button>
 
-        {/* Help Circle (Tablet/Desktop) */}
-        <button
-          className="p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none hidden md:flex items-center justify-center cursor-pointer"
-          title="Help & Guidelines"
-          aria-label="Help"
-        >
-          <HelpCircle className="w-5 h-5" />
-        </button>
-
         {/* User Profile Avatar / Info */}
         <div className="flex items-center gap-2 pl-1 sm:pl-2 border-l border-slate-200">
           <div className="text-right hidden sm:block leading-tight">
