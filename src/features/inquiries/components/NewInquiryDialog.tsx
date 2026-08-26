@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Check, Plus, ShieldCheck } from 'lucide-react';
 
 const newInquirySchema = z.object({
   companyName: z.string().min(2, 'Company name is required'),
@@ -18,7 +19,6 @@ const newInquirySchema = z.object({
   phone: z.string().optional(),
   source: z.enum(['EXHIBITION', 'REFERRAL', 'ORGANIC', 'WEBSITE', 'CONFERENCE', 'DIRECT_PARTNER', 'OTHER']),
   sourceDetail: z.string().optional(),
-  serviceId: z.string().optional(),
   serviceScope: z.string().optional(),
   remarks: z.string().optional(),
   assignedToId: z.string().optional(),
@@ -55,6 +55,7 @@ export function NewInquiryDialog({
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
+  const [selectedServiceIds, setSelectedServiceIds] = React.useState<string[]>([]);
 
   const {
     register,
@@ -68,15 +69,27 @@ export function NewInquiryDialog({
     },
   });
 
+  const toggleService = (id: string) => {
+    setSelectedServiceIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
   const onSubmit = async (data: NewInquiryFormData) => {
     setIsSubmitting(true);
     setServerError(null);
 
     try {
+      const payload = {
+        ...data,
+        serviceIds: selectedServiceIds,
+        serviceId: selectedServiceIds[0] || undefined,
+      };
+
       const res = await fetch('/api/inquiries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       const json = await res.json();
@@ -85,6 +98,7 @@ export function NewInquiryDialog({
       }
 
       reset();
+      setSelectedServiceIds([]);
       onClose();
       if (onSuccess) {
         onSuccess(json.data.id);
@@ -100,10 +114,10 @@ export function NewInquiryDialog({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create New Client Inquiry" size="md">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-4">
+    <Modal isOpen={isOpen} onClose={onClose} title="Create New Client Inquiry" size="lg">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5 sm:space-y-4">
         {serverError && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded font-medium">
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg font-medium">
             {serverError}
           </div>
         )}
@@ -142,7 +156,7 @@ export function NewInquiryDialog({
             <label className="block text-xs font-semibold text-slate-700 mb-1">Inquiry Source</label>
             <select
               {...register('source')}
-              className="flex h-9 w-full rounded border border-slate-200 bg-white px-3 py-1 text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
+              className="flex h-9 w-full rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20"
             >
               <option value="EXHIBITION">Exhibition</option>
               <option value="REFERRAL">Direct Referral</option>
@@ -155,36 +169,60 @@ export function NewInquiryDialog({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Regulatory Service</label>
-            <select
-              {...register('serviceId')}
-              className="flex h-9 w-full rounded border border-slate-200 bg-white px-3 py-1 text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
-            >
-              <option value="">Select Service Area...</option>
-              {services.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+        {/* Multiple Services Multi-Select Grid */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-semibold text-slate-700">
+              Regulatory Services (Multi-Select Allowed)
+            </label>
+            {selectedServiceIds.length > 0 && (
+              <span className="text-[11px] font-bold text-[#0040e0] bg-[#e5eeff] px-2 py-0.5 rounded-full">
+                {selectedServiceIds.length} Selected
+              </span>
+            )}
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 rounded-lg border border-slate-200 bg-slate-50 touch-scroll">
+            {services.map((s) => {
+              const isSelected = selectedServiceIds.includes(s.id);
+              return (
+                <button
+                  type="button"
+                  key={s.id}
+                  onClick={() => toggleService(s.id)}
+                  className={`flex items-center justify-between p-2 rounded-lg border text-left text-xs transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#0040e0] text-white border-[#0040e0] font-semibold shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-100/60'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ShieldCheck className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
+                    <span className="truncate">{s.name}</span>
+                  </div>
+                  {isSelected ? (
+                    <Check className="w-3.5 h-3.5 text-white shrink-0 ml-1.5" />
+                  ) : (
+                    <Plus className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1.5" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Assigned Sales Rep</label>
-            <select
-              {...register('assignedToId')}
-              className="flex h-9 w-full rounded border border-slate-200 bg-white px-3 py-1 text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
-            >
-              <option value="">Select Sales Rep...</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.fullName}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">Assigned Sales Rep</label>
+          <select
+            {...register('assignedToId')}
+            className="flex h-9 w-full rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20"
+          >
+            <option value="">Select Sales Rep...</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.fullName}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

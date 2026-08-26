@@ -13,6 +13,7 @@ export interface CreateInquiryInput {
   source?: InquirySource;
   sourceDetail?: string;
   serviceId?: string;
+  serviceIds?: string[];
   serviceScope?: string;
   remarks?: string;
   assignedToId?: string;
@@ -21,6 +22,21 @@ export interface CreateInquiryInput {
 export class CreateInquiryUseCase {
   static async execute(input: CreateInquiryInput, currentUserId?: string) {
     const inquiryNumber = await getNextSequenceNumber('INQUIRY');
+
+    let resolvedServiceId = input.serviceId || null;
+    let resolvedServiceScope = input.serviceScope || null;
+
+    if (input.serviceIds && input.serviceIds.length > 0) {
+      resolvedServiceId = input.serviceIds[0];
+      const services = await db.service.findMany({
+        where: { id: { in: input.serviceIds } },
+        select: { name: true },
+      });
+      const names = services.map((s) => s.name).join(', ');
+      if (names) {
+        resolvedServiceScope = input.serviceScope ? `${names} • ${input.serviceScope}` : names;
+      }
+    }
 
     const inquiry = await db.inquiry.create({
       data: {
@@ -33,8 +49,8 @@ export class CreateInquiryUseCase {
         source: input.source || InquirySource.ORGANIC,
         sourceDetail: input.sourceDetail || null,
         status: InquiryStatus.NEW,
-        serviceId: input.serviceId || null,
-        serviceScope: input.serviceScope || null,
+        serviceId: resolvedServiceId,
+        serviceScope: resolvedServiceScope,
         remarks: input.remarks || null,
         assignedToId: input.assignedToId || null,
       },
