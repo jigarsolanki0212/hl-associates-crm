@@ -125,7 +125,7 @@ export function AppShell({
           user={user}
         />
 
-        <main className="flex-1 px-3 sm:px-6 md:px-8 py-4 sm:py-6 max-w-[1440px] w-full mx-auto animate-fade-in pb-20 md:pb-8 touch-scroll">
+        <main className="flex-1 px-3.5 sm:px-6 md:px-8 py-3.5 sm:py-6 max-w-[1600px] w-full mx-auto animate-fade-in pb-24 md:pb-8 touch-scroll landscape-compact-padding ultrawide-container">
           {children}
         </main>
       </div>

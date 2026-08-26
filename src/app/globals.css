@@ -155,16 +155,43 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
   animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Mobile Landscape Optimizations (height < 500px) */
-@media (orientation: landscape) and (max-height: 500px) {
+/* Mobile Landscape Optimizations (height < 550px) */
+@media (orientation: landscape) and (max-height: 550px) {
   .landscape-compact-header {
-    height: 48px !important;
+    height: 44px !important;
   }
   .landscape-compact-padding {
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
   }
   .landscape-modal-body {
-    max-height: calc(100dvh - 3rem) !important;
+    max-height: calc(100dvh - 2.5rem) !important;
   }
 }
+
+/* Extra small screens (iPhone SE, 320px - 360px) */
+@media (max-width: 360px) {
+  .xs-compact-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+  .xs-text-tight {
+    font-size: 0.7rem !important;
+  }
+}
+
+/* Tablets (iPad, 768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .tablet-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Large Screens & Ultra-wide (1920px+) */
+@media (min-width: 1920px) {
+  .ultrawide-container {
+    max-width: 1800px !important;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
