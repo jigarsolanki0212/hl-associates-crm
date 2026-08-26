@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { encryptString, decryptString } from '@/lib/crypto/encryption';
 
 describe('AES-256-GCM Symmetric Encryption', () => {

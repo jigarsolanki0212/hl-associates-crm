@@ -20,13 +20,20 @@ export async function compressImageFile(
     mimeType = 'image/jpeg',
   } = options;
 
-  return new Promise((resolve, reject) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      reject(new Error('Selected file is not an image.'));
-      return;
-    }
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Selected file is not an image.');
+  }
 
+  // Handle environment where FileReader is not available (Node.js / Unit tests)
+  if (typeof FileReader === 'undefined') {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString('base64');
+    return `data:${file.type || 'image/png'};base64,${base64}`;
+  }
+
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
     reader.onerror = () => {

@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { hasPermission } from '@/server/policies/rbac';
 import { Permissions } from '@/server/policies/permissions';
 import { RoleName } from '@prisma/client';
