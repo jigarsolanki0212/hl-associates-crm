@@ -24,6 +24,7 @@ import { getDaysRemaining } from '@/lib/dates/expiryCalculator';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { TableSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
+import { DatePresetFilter, DateFilterValue } from '@/components/ui/DatePresetFilter';
 
 interface ClientItem {
   id: string;
@@ -34,6 +35,7 @@ interface ClientItem {
   email: string;
   phone?: string | null;
   status: string;
+  createdAt: string;
   assignedTo?: {
     id: string;
     fullName: string;
@@ -57,6 +59,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
   const [stats, setStats] = React.useState<{ totalClients: number; activeServices: number; expiringSoon: number; expired: number } | null>(null);
   const [pagination, setPagination] = React.useState({ total: 0, page: 1, limit: 10, totalPages: 1 });
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isExporting, setIsExporting] = React.useState(false);
   const [toast, setToast] = React.useState<ToastMessage | null>(null);
 
   // Filters
@@ -64,6 +67,8 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
   const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [serviceId, setServiceId] = React.useState('');
   const [status, setStatus] = React.useState('');
+  const [assignedToId, setAssignedToId] = React.useState('');
+  const [dateFilter, setDateFilter] = React.useState<DateFilterValue>({ preset: 'ALL' });
   const [page, setPage] = React.useState(1);
   const [limit, setLimit] = React.useState(10);
 
@@ -93,6 +98,9 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
       if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (status) params.set('status', status);
       if (serviceId) params.set('serviceId', serviceId);
+      if (assignedToId) params.set('assignedToId', assignedToId);
+      if (dateFilter.startDate) params.set('startDate', dateFilter.startDate);
+      if (dateFilter.endDate) params.set('endDate', dateFilter.endDate);
       params.set('page', String(page));
       params.set('limit', String(limit));
 
@@ -110,7 +118,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearch, status, serviceId, page, limit]);
+  }, [debouncedSearch, status, serviceId, assignedToId, dateFilter, page, limit]);
 
   React.useEffect(() => {
     const controller = new AbortController();
@@ -164,35 +172,54 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
+    setIsExporting(true);
     try {
-      if (clients.length === 0) {
-        setToast({ type: 'info', title: 'No Data', description: 'No client records available to export.' });
+      const params = new URLSearchParams();
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+      if (status) params.set('status', status);
+      if (serviceId) params.set('serviceId', serviceId);
+      if (assignedToId) params.set('assignedToId', assignedToId);
+      if (dateFilter.startDate) params.set('startDate', dateFilter.startDate);
+      if (dateFilter.endDate) params.set('endDate', dateFilter.endDate);
+      params.set('export', 'true');
+
+      const res = await fetch(`/api/clients?${params.toString()}`);
+      const json = await res.json();
+      const exportData: ClientItem[] = json.success ? json.data.clients : clients;
+
+      if (!exportData || exportData.length === 0) {
+        setToast({ type: 'info', title: 'No Data', description: 'No client records match the selected filters to export.' });
         return;
       }
 
       exportToExcel({
-        filename: 'HL_Associates_Clients',
-        sheetName: 'Active Clients',
+        filename: `HL_Clients_${dateFilter.preset !== 'ALL' ? dateFilter.preset.toLowerCase() : 'all_records'}`,
+        sheetName: 'Clients Report',
         columns: [
           { header: 'Client ID', key: 'clientNumber', width: 18 },
-          { header: 'Company Name', key: 'companyName', width: 30 },
+          { header: 'Company Name', key: 'companyName', width: 32 },
           { header: 'Contact Person', key: 'contactName', width: 22 },
-          { header: 'Corporate Email', key: 'email', width: 26 },
+          { header: 'Corporate Email', key: 'email', width: 28 },
+          { header: 'Phone', key: 'phone', width: 18 },
           { header: 'Status', key: 'status', width: 14 },
-          { header: 'Primary Regulatory Service', key: 'services.0.serviceNameSnapshot', width: 30 },
+          { header: 'Assigned Sales / Rep', key: 'assignedTo.fullName', width: 24 },
+          { header: 'Primary Service', key: 'services.0.serviceNameSnapshot', width: 30 },
           { header: 'Expiry Date', key: 'services.0.expiryDate', width: 18, format: (v) => v ? formatFriendlyDate(v) : 'N/A' },
+          { header: 'Created Date', key: 'createdAt', width: 18, format: (v) => v ? formatFriendlyDate(v) : 'N/A' },
         ],
-        data: clients,
+        data: exportData,
       });
 
       setToast({
         type: 'success',
         title: 'Excel Export Successful',
-        description: `Exported ${clients.length} client records to .xlsx file.`,
+        description: `Exported ${exportData.length} filtered client records to .xlsx file.`,
       });
     } catch (err: any) {
       setToast({ type: 'error', title: 'Export Failed', description: err?.message || 'Error exporting to Excel.' });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -211,8 +238,15 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
         </div>
 
         <div className="flex items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
-          <Button onClick={handleExportExcel} variant="secondary" size="md" className="flex-1 sm:flex-initial">
-            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-[#0040e0]" /> Export Excel
+          <Button
+            onClick={handleExportExcel}
+            variant="secondary"
+            size="md"
+            disabled={isExporting}
+            className="flex-1 sm:flex-initial"
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-[#0040e0]" />
+            {isExporting ? 'Exporting...' : 'Export Excel'}
           </Button>
           <Button onClick={() => setIsNewClientOpen(true)} variant="primary" size="md" className="flex-1 sm:flex-initial">
             <Plus className="w-4 h-4 mr-1.5" /> New Client
@@ -220,32 +254,32 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
         </div>
       </div>
 
-      {/* 4 Summary Cards - No dummy flash */}
+      {/* Summary KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">TOTAL CLIENTS</span>
-            <Users className="w-4 h-4 text-slate-400" />
+            <Users className="w-4 h-4 text-[#0040e0]" />
           </div>
           {stats ? (
             <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 sm:mt-2">{stats.totalClients}</div>
           ) : (
             <div className="h-8 w-16 bg-slate-100 animate-pulse rounded my-1 sm:my-2" />
           )}
-          <div className="text-[11px] sm:text-xs text-emerald-600 font-semibold mt-1">↑ Active Enterprise Portfolio</div>
+          <div className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">Active regulatory accounts</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">ACTIVE SERVICES</span>
-            <ShieldCheck className="w-4 h-4 text-slate-400" />
+            <ShieldCheck className="w-4 h-4 text-[#0040e0]" />
           </div>
           {stats ? (
             <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 sm:mt-2">{stats.activeServices}</div>
           ) : (
             <div className="h-8 w-16 bg-slate-100 animate-pulse rounded my-1 sm:my-2" />
           )}
-          <div className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">Regulated & Valid</div>
+          <div className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">In compliance pipeline</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
@@ -275,43 +309,79 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 shadow-card flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter clients..."
-            className="h-9 w-full rounded border border-slate-300 bg-white pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs"
-          />
+      {/* Filter Card with Date Range & Sales Filters */}
+      <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-4 shadow-card space-y-3">
+        {/* Top Filter Row: Search, Service, Status, Sales */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by company, contact, email, or client ID..."
+              className="h-9 w-full rounded border border-slate-300 bg-white pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={serviceId}
+              onChange={(e) => {
+                setServiceId(e.target.value);
+                setPage(1);
+              }}
+              className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[130px]"
+            >
+              <option value="">All Services</option>
+              {initialServices.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(1);
+              }}
+              className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[110px]"
+            >
+              <option value="">Status: All</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="CHURNED">Churned</option>
+            </select>
+
+            <select
+              value={assignedToId}
+              onChange={(e) => {
+                setAssignedToId(e.target.value);
+                setPage(1);
+              }}
+              className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[130px]"
+            >
+              <option value="">All Sales / Assigned</option>
+              {initialUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={serviceId}
-            onChange={(e) => setServiceId(e.target.value)}
-            className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[130px]"
-          >
-            <option value="">All Services</option>
-            {initialServices.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[120px]"
-          >
-            <option value="">Status: All</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-            <option value="CHURNED">Churned</option>
-          </select>
+        {/* Date Filter Bar */}
+        <div className="pt-2 border-t border-slate-100">
+          <DatePresetFilter
+            value={dateFilter}
+            onChange={(df) => {
+              setDateFilter(df);
+              setPage(1);
+            }}
+          />
         </div>
       </div>
 

@@ -20,6 +20,7 @@ import {
 import { formatFriendlyDate } from '@/lib/dates/timezone';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
+import { DatePresetFilter, DateFilterValue } from '@/components/ui/DatePresetFilter';
 
 interface InquiryItem {
   id: string;
@@ -53,6 +54,7 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
   const [stats, setStats] = React.useState<{ total: number; new: number; proformaSent: number; accepted: number } | null>(null);
   const [pagination, setPagination] = React.useState({ total: 0, page: 1, limit: 10, totalPages: 1 });
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isExporting, setIsExporting] = React.useState(false);
   const [isNewModalOpen, setIsNewModalOpen] = React.useState(false);
   const [toast, setToast] = React.useState<ToastMessage | null>(null);
 
@@ -61,6 +63,8 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
   const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [status, setStatus] = React.useState('');
   const [serviceId, setServiceId] = React.useState('');
+  const [assignedToId, setAssignedToId] = React.useState('');
+  const [dateFilter, setDateFilter] = React.useState<DateFilterValue>({ preset: 'ALL' });
   const [page, setPage] = React.useState(1);
   const [limit, setLimit] = React.useState(10);
 
@@ -80,6 +84,9 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
       if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (status) params.set('status', status);
       if (serviceId) params.set('serviceId', serviceId);
+      if (assignedToId) params.set('assignedToId', assignedToId);
+      if (dateFilter.startDate) params.set('startDate', dateFilter.startDate);
+      if (dateFilter.endDate) params.set('endDate', dateFilter.endDate);
       params.set('page', String(page));
       params.set('limit', String(limit));
 
@@ -97,7 +104,7 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearch, status, serviceId, page, limit]);
+  }, [debouncedSearch, status, serviceId, assignedToId, dateFilter, page, limit]);
 
   React.useEffect(() => {
     const controller = new AbortController();
@@ -109,39 +116,57 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
     setSearch('');
     setStatus('');
     setServiceId('');
+    setAssignedToId('');
+    setDateFilter({ preset: 'ALL' });
     setPage(1);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
+    setIsExporting(true);
     try {
-      if (inquiries.length === 0) {
-        setToast({ type: 'info', title: 'No Data', description: 'No inquiry records available to export.' });
+      const params = new URLSearchParams();
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+      if (status) params.set('status', status);
+      if (serviceId) params.set('serviceId', serviceId);
+      if (assignedToId) params.set('assignedToId', assignedToId);
+      if (dateFilter.startDate) params.set('startDate', dateFilter.startDate);
+      if (dateFilter.endDate) params.set('endDate', dateFilter.endDate);
+      params.set('export', 'true');
+
+      const res = await fetch(`/api/inquiries?${params.toString()}`);
+      const json = await res.json();
+      const exportData: InquiryItem[] = json.success ? json.data.inquiries : inquiries;
+
+      if (!exportData || exportData.length === 0) {
+        setToast({ type: 'info', title: 'No Data', description: 'No inquiry records match the selected filters to export.' });
         return;
       }
 
       exportToExcel({
-        filename: 'HL_Associates_Inquiries',
-        sheetName: 'Inquiries',
+        filename: `HL_Inquiries_${dateFilter.preset !== 'ALL' ? dateFilter.preset.toLowerCase() : 'all_records'}`,
+        sheetName: 'Inquiries Pipeline',
         columns: [
-          { header: 'Inquiry Reference', key: 'inquiryNumber', width: 18 },
-          { header: 'Company Name', key: 'companyName', width: 28 },
-          { header: 'Primary Contact', key: 'contactName', width: 22 },
-          { header: 'Lead Source', key: 'source', width: 18 },
-          { header: 'Service Scope', key: 'service.name', width: 25 },
+          { header: 'Inquiry Number', key: 'inquiryNumber', width: 18 },
+          { header: 'Company Name', key: 'companyName', width: 30 },
+          { header: 'Contact Person', key: 'contactName', width: 22 },
           { header: 'Status', key: 'status', width: 16 },
-          { header: 'Assigned Officer', key: 'assignedTo.fullName', width: 22 },
-          { header: 'Creation Date', key: 'createdAt', width: 18, format: (v) => formatFriendlyDate(v) },
+          { header: 'Service Required', key: 'service.name', width: 26 },
+          { header: 'Lead Source', key: 'source', width: 16 },
+          { header: 'Assigned Sales Rep', key: 'assignedTo.fullName', width: 22 },
+          { header: 'Inquiry Date', key: 'createdAt', width: 18, format: (v) => v ? formatFriendlyDate(v) : 'N/A' },
         ],
-        data: inquiries,
+        data: exportData,
       });
 
       setToast({
         type: 'success',
         title: 'Excel Export Successful',
-        description: `Exported ${inquiries.length} inquiry records to .xlsx file.`,
+        description: `Exported ${exportData.length} filtered inquiries to .xlsx file.`,
       });
     } catch (err: any) {
-      setToast({ type: 'error', title: 'Export Failed', description: err?.message || 'Error creating Excel file.' });
+      setToast({ type: 'error', title: 'Export Failed', description: err?.message || 'Error exporting to Excel.' });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -177,8 +202,15 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button onClick={handleExportExcel} variant="secondary" size="md" className="flex-1 sm:flex-initial">
-            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-[#0040e0]" /> Export Excel
+          <Button
+            onClick={handleExportExcel}
+            variant="secondary"
+            size="md"
+            disabled={isExporting}
+            className="flex-1 sm:flex-initial"
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-[#0040e0]" />
+            {isExporting ? 'Exporting...' : 'Export Excel'}
           </Button>
           <Button onClick={() => setIsNewModalOpen(true)} variant="primary" size="md" className="flex-1 sm:flex-initial">
             <Plus className="w-4 h-4 mr-1.5" /> New Inquiry
@@ -225,59 +257,96 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 shadow-card flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
-        {/* Search */}
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search ID, Client, or Contact..."
-            className="h-9 w-full rounded border border-slate-300 bg-white pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs"
-          />
+      {/* Filter Card with Date Range & Sales Filters */}
+      <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-4 shadow-card space-y-3">
+        {/* Top Filter Row */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search ID, Client, or Contact..."
+              className="h-9 w-full rounded border border-slate-300 bg-white pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Status Dropdown */}
+            <select
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(1);
+              }}
+              className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[120px]"
+            >
+              <option value="">Status: All</option>
+              <option value="NEW">New</option>
+              <option value="PROFORMA_SENT">Pending Review</option>
+              <option value="ACCEPTED">Proposal Sent / Accepted</option>
+              <option value="CONVERTED">Converted</option>
+              <option value="LOST">Lost</option>
+              <option value="REOPENED">Reopened</option>
+            </select>
+
+            {/* Service Area Dropdown */}
+            <select
+              value={serviceId}
+              onChange={(e) => {
+                setServiceId(e.target.value);
+                setPage(1);
+              }}
+              className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[130px]"
+            >
+              <option value="">Service: All</option>
+              {initialServices.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Sales / Assigned Rep Dropdown */}
+            <select
+              value={assignedToId}
+              onChange={(e) => {
+                setAssignedToId(e.target.value);
+                setPage(1);
+              }}
+              className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[130px]"
+            >
+              <option value="">Sales Rep: All</option>
+              {initialUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.fullName}
+                </option>
+              ))}
+            </select>
+
+            {/* Clear Filters */}
+            {(search || status || serviceId || assignedToId || dateFilter.preset !== 'ALL') && (
+              <button
+                onClick={handleClearFilters}
+                className="text-xs font-semibold text-[#0040e0] hover:underline px-2 py-1.5 cursor-pointer whitespace-nowrap"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Status Dropdown */}
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[120px]"
-          >
-            <option value="">Status: All</option>
-            <option value="NEW">New</option>
-            <option value="PROFORMA_SENT">Pending Review</option>
-            <option value="ACCEPTED">Proposal Sent / Accepted</option>
-            <option value="CONVERTED">Converted</option>
-            <option value="LOST">Lost</option>
-            <option value="REOPENED">Reopened</option>
-          </select>
-
-          {/* Service Area Dropdown */}
-          <select
-            value={serviceId}
-            onChange={(e) => setServiceId(e.target.value)}
-            className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[130px]"
-          >
-            <option value="">Service: All</option>
-            {initialServices.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-
-          {/* Clear Filters */}
-          {(search || status || serviceId) && (
-            <button
-              onClick={handleClearFilters}
-              className="text-xs font-semibold text-[#0040e0] hover:underline px-2 py-1.5 cursor-pointer whitespace-nowrap"
-            >
-              Clear Filters
-            </button>
-          )}
+        {/* Date Filter Bar */}
+        <div className="pt-2 border-t border-slate-100">
+          <DatePresetFilter
+            value={dateFilter}
+            onChange={(df) => {
+              setDateFilter(df);
+              setPage(1);
+            }}
+          />
         </div>
       </div>
 

@@ -14,9 +14,14 @@ export async function GET(request: Request) {
   const search = searchParams.get('search')?.trim();
   const status = searchParams.get('status') as InquiryStatus | null;
   const serviceId = searchParams.get('serviceId');
+  const assignedToId = searchParams.get('assignedToId');
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
+  const isExport = searchParams.get('export') === 'true';
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '10', 10);
-  const skip = (page - 1) * limit;
+  const skip = isExport ? 0 : (page - 1) * limit;
+  const take = isExport ? 5000 : limit;
 
   const where: Prisma.InquiryWhereInput = {};
 
@@ -26,6 +31,24 @@ export async function GET(request: Request) {
 
   if (serviceId) {
     where.serviceId = serviceId;
+  }
+
+  if (assignedToId) {
+    where.assignedToId = assignedToId;
+  }
+
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) {
+      const s = new Date(startDate);
+      s.setHours(0, 0, 0, 0);
+      where.createdAt.gte = s;
+    }
+    if (endDate) {
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      where.createdAt.lte = e;
+    }
   }
 
   if (search) {
@@ -50,7 +73,7 @@ export async function GET(request: Request) {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take,
       }),
     ]);
 
