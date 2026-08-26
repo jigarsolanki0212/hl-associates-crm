@@ -24,8 +24,8 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-[#fbf9fa] flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-[420px] bg-white rounded-lg border border-slate-200 p-8 shadow-card">
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-12 h-12 rounded bg-[#0040e0] flex items-center justify-center text-white font-bold text-lg mb-3 shadow-sm">
-            HL
+          <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center p-2 mb-3">
+            <img src="/logo.svg" alt="HL Associates" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Reset Password</h1>
           <p className="text-xs text-slate-500 mt-1">Enter your registered corporate email address</p>

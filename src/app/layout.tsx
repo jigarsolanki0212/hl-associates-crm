@@ -15,6 +15,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'HL Associates CRM | Enterprise Regulatory Compliance Suite',
   description: 'Enterprise Regulatory Compliance & Sales CRM for HL Associates',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/icon.png', sizes: '256x256', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({

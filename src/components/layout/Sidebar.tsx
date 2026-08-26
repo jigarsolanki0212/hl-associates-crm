@@ -77,8 +77,8 @@ export function Sidebar({
       {/* Brand Header */}
       <div className="h-16 flex items-center px-4 border-b border-slate-100 justify-between shrink-0 pt-safe">
         <Link href="/dashboard" onClick={handleLinkClick} className="flex items-center gap-3 overflow-hidden">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded bg-[#0040e0] flex items-center justify-center text-white font-bold text-sm sm:text-base shrink-0 shadow-sm">
-            HL
+          <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center justify-center shrink-0 p-1">
+            <img src="/logo.svg" alt="HL Associates" className="w-full h-full object-contain" />
           </div>
           {(!isCollapsed || isMobileDrawer) && (
             <div className="flex flex-col truncate">

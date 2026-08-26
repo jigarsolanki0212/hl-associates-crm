@@ -500,13 +500,16 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
         {/* Company Branding & Details */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 sm:p-6 shadow-card space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#0040e0] flex items-center justify-center">
-                <Building2 className="w-4 h-4" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center justify-center p-1 shrink-0">
+                <img src="/logo.svg" alt="HL Associates" className="w-full h-full object-contain" />
               </div>
-              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                Company Branding & Regulatory Identity
-              </h2>
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                  Company Branding & Regulatory Identity
+                </h2>
+                <p className="text-[11px] text-slate-500 font-medium">Official Brand Assets & Regulatory Credentials</p>
+              </div>
             </div>
             {isEditing && (
               <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">

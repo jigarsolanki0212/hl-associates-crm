@@ -45,8 +45,8 @@ export default function LoginPage() {
       <div className="w-full max-w-[420px] bg-white rounded-lg border border-slate-200 p-5 sm:p-8 shadow-card my-auto">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-5 sm:mb-6">
-          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded bg-[#0040e0] flex items-center justify-center text-white font-bold text-base sm:text-lg mb-2.5 sm:mb-3 shadow-sm">
-            HL
+          <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center p-2 mb-3">
+            <img src="/logo.svg" alt="HL Associates" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">HL Associates CRM</h1>
           <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Enterprise Regulatory Compliance Suite</p>

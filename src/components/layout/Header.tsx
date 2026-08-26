@@ -40,8 +40,8 @@ export function Header({
         </button>
 
         <Link href="/dashboard" className="flex items-center gap-2 md:hidden">
-          <div className="w-7 h-7 rounded bg-[#0040e0] flex items-center justify-center text-white font-bold text-xs shadow-xs">
-            HL
+          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 shadow-xs flex items-center justify-center p-0.5 shrink-0">
+            <img src="/logo.svg" alt="HL Associates" className="w-full h-full object-contain" />
           </div>
           <span className="font-bold text-xs text-slate-900 truncate max-w-[140px] sm:max-w-none">
             HL Associates CRM
