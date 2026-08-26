@@ -6,7 +6,19 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { Users, ShieldCheck, Clock, AlertTriangle, Download, Plus, Search, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
+import { Toast, ToastMessage } from '@/components/ui/Toast';
+import { exportToExcel } from '@/lib/utils/excelExport';
+import {
+  Users,
+  ShieldCheck,
+  Clock,
+  AlertTriangle,
+  Plus,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  FileSpreadsheet,
+} from 'lucide-react';
 import { formatFriendlyDate } from '@/lib/dates/timezone';
 import { getDaysRemaining } from '@/lib/dates/expiryCalculator';
 
@@ -34,9 +46,10 @@ interface ClientsViewProps {
 
 export function ClientsView({ initialServices, initialUsers }: ClientsViewProps) {
   const [clients, setClients] = React.useState<ClientItem[]>([]);
-  const [stats, setStats] = React.useState({ totalClients: 312, activeServices: 142, expiringSoon: 12, expired: 3 });
+  const [stats, setStats] = React.useState<{ totalClients: number; activeServices: number; expiringSoon: number; expired: number } | null>(null);
   const [pagination, setPagination] = React.useState({ total: 0, page: 1, limit: 10, totalPages: 1 });
   const [isLoading, setIsLoading] = React.useState(true);
+  const [toast, setToast] = React.useState<ToastMessage | null>(null);
 
   // Filters
   const [search, setSearch] = React.useState('');
@@ -102,7 +115,18 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
         setNewContact('');
         setNewEmail('');
         setNewPhone('');
+        setToast({
+          type: 'success',
+          title: 'Client Created',
+          description: `${newCompany} profile is now active.`,
+        });
         fetchClients();
+      } else {
+        setToast({
+          type: 'error',
+          title: 'Failed to Create Client',
+          description: json.error?.message || 'Error creating client profile.',
+        });
       }
     } catch (err) {
       console.error('Create client error:', err);
@@ -111,30 +135,43 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
     }
   };
 
-  const exportCsv = () => {
-    if (clients.length === 0) return;
-    const headers = ['Client ID', 'Company', 'Contact', 'Email', 'Status', 'Active Service', 'Expiry Date'];
-    const rows = clients.map((c) => [
-      c.clientNumber,
-      `"${c.companyName.replace(/"/g, '""')}"`,
-      `"${c.contactName.replace(/"/g, '""')}"`,
-      c.email,
-      c.status,
-      `"${(c.services[0]?.serviceNameSnapshot || 'None').replace(/"/g, '""')}"`,
-      c.services[0]?.expiryDate ? new Date(c.services[0].expiryDate).toISOString().slice(0, 10) : 'N/A',
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `HL_Associates_Clients_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleExportExcel = () => {
+    try {
+      if (clients.length === 0) {
+        setToast({ type: 'info', title: 'No Data', description: 'No client records available to export.' });
+        return;
+      }
+
+      exportToExcel({
+        filename: 'HL_Associates_Clients',
+        sheetName: 'Active Clients',
+        columns: [
+          { header: 'Client ID', key: 'clientNumber', width: 18 },
+          { header: 'Company Name', key: 'companyName', width: 30 },
+          { header: 'Contact Person', key: 'contactName', width: 22 },
+          { header: 'Corporate Email', key: 'email', width: 26 },
+          { header: 'Status', key: 'status', width: 14 },
+          { header: 'Primary Regulatory Service', key: 'services.0.serviceNameSnapshot', width: 30 },
+          { header: 'Expiry Date', key: 'services.0.expiryDate', width: 18, format: (v) => v ? formatFriendlyDate(v) : 'N/A' },
+        ],
+        data: clients,
+      });
+
+      setToast({
+        type: 'success',
+        title: 'Excel Export Successful',
+        description: `Exported ${clients.length} client records to .xlsx file.`,
+      });
+    } catch (err: any) {
+      setToast({ type: 'error', title: 'Export Failed', description: err?.message || 'Error exporting to Excel.' });
+    }
   };
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Toast Notification */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
@@ -145,8 +182,8 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
         </div>
 
         <div className="flex items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
-          <Button onClick={exportCsv} variant="secondary" size="md" className="flex-1 sm:flex-initial">
-            <Download className="w-4 h-4 mr-1.5" /> Export
+          <Button onClick={handleExportExcel} variant="secondary" size="md" className="flex-1 sm:flex-initial">
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-700" /> Export Excel
           </Button>
           <Button onClick={() => setIsNewClientOpen(true)} variant="primary" size="md" className="flex-1 sm:flex-initial">
             <Plus className="w-4 h-4 mr-1.5" /> New Client
@@ -154,15 +191,19 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
         </div>
       </div>
 
-      {/* 4 Summary Cards */}
+      {/* 4 Summary Cards - No dummy flash */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">TOTAL CLIENTS</span>
             <Users className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 sm:mt-2">{stats.totalClients}</div>
-          <div className="text-[11px] sm:text-xs text-emerald-600 font-semibold mt-1">↑ +12 this month</div>
+          {stats ? (
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 sm:mt-2">{stats.totalClients}</div>
+          ) : (
+            <div className="h-8 w-16 bg-slate-100 animate-pulse rounded my-1 sm:my-2" />
+          )}
+          <div className="text-[11px] sm:text-xs text-emerald-600 font-semibold mt-1">↑ Active Enterprise Portfolio</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
@@ -170,8 +211,12 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
             <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">ACTIVE SERVICES</span>
             <ShieldCheck className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 sm:mt-2">{stats.activeServices}</div>
-          <div className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">Stable load</div>
+          {stats ? (
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 sm:mt-2">{stats.activeServices}</div>
+          ) : (
+            <div className="h-8 w-16 bg-slate-100 animate-pulse rounded my-1 sm:my-2" />
+          )}
+          <div className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">Regulated & Valid</div>
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
@@ -179,7 +224,11 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
             <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">EXPIRING SOON</span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-amber-600 mt-1 sm:mt-2">{stats.expiringSoon}</div>
+          {stats ? (
+            <div className="text-2xl sm:text-3xl font-bold text-amber-600 mt-1 sm:mt-2">{stats.expiringSoon}</div>
+          ) : (
+            <div className="h-8 w-16 bg-slate-100 animate-pulse rounded my-1 sm:my-2" />
+          )}
           <div className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">Within 30 days</div>
         </div>
 
@@ -188,8 +237,12 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
             <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">EXPIRED</span>
             <AlertTriangle className="w-4 h-4 text-red-500" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-red-600 mt-1 sm:mt-2">{stats.expired}</div>
-          <div className="text-[11px] sm:text-xs text-red-600 font-medium mt-1">Requires action</div>
+          {stats ? (
+            <div className="text-2xl sm:text-3xl font-bold text-red-600 mt-1 sm:mt-2">{stats.expired}</div>
+          ) : (
+            <div className="h-8 w-16 bg-slate-100 animate-pulse rounded my-1 sm:my-2" />
+          )}
+          <div className="text-[11px] sm:text-xs text-red-600 font-medium mt-1">Requires renewal</div>
         </div>
       </div>
 
@@ -202,7 +255,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter clients..."
-            className="h-9 w-full rounded border border-slate-200 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
+            className="h-9 w-full rounded border border-slate-300 bg-white pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs"
           />
         </div>
 
@@ -210,7 +263,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
           <select
             value={serviceId}
             onChange={(e) => setServiceId(e.target.value)}
-            className="h-9 rounded border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue flex-1 sm:flex-initial min-w-[130px]"
+            className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[130px]"
           >
             <option value="">All Services</option>
             {initialServices.map((s) => (
@@ -223,7 +276,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="h-9 rounded border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue flex-1 sm:flex-initial min-w-[120px]"
+            className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[120px]"
           >
             <option value="">Status: All</option>
             <option value="ACTIVE">Active</option>
@@ -335,7 +388,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
         {/* Pagination Footer */}
         <div className="p-3 sm:p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div>
-            Showing 1 to {clients.length} of {pagination.total || stats.totalClients} entries
+            Showing 1 to {clients.length} of {pagination.total || (stats?.totalClients ?? clients.length)} entries
           </div>
 
           <div className="flex items-center gap-2">
@@ -388,7 +441,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
               <select
                 value={newAssigned}
                 onChange={(e) => setNewAssigned(e.target.value)}
-                className="flex h-9 w-full rounded border border-slate-200 bg-white px-3 py-1 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
+                className="flex h-9 w-full rounded border border-slate-300 bg-white px-3 py-1 text-xs text-slate-900 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs"
               >
                 <option value="">Select Rep...</option>
                 {initialUsers.map((u) => (

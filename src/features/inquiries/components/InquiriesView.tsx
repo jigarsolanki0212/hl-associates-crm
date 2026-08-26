@@ -5,8 +5,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Toast, ToastMessage } from '@/components/ui/Toast';
 import { NewInquiryDialog } from './NewInquiryDialog';
-import { Search, Eye, Edit, ChevronLeft, ChevronRight, Plus, SlidersHorizontal } from 'lucide-react';
+import { exportToExcel } from '@/lib/utils/excelExport';
+import {
+  Search,
+  Eye,
+  Edit,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  FileSpreadsheet,
+} from 'lucide-react';
 import { formatFriendlyDate } from '@/lib/dates/timezone';
 
 interface InquiryItem {
@@ -31,10 +41,11 @@ interface InquiriesViewProps {
 export function InquiriesView({ initialServices, initialUsers }: InquiriesViewProps) {
   const router = useRouter();
   const [inquiries, setInquiries] = React.useState<InquiryItem[]>([]);
-  const [stats, setStats] = React.useState({ total: 124, new: 12, proformaSent: 45, accepted: 67 });
+  const [stats, setStats] = React.useState<{ total: number; new: number; proformaSent: number; accepted: number } | null>(null);
   const [pagination, setPagination] = React.useState({ total: 0, page: 1, limit: 10, totalPages: 1 });
   const [isLoading, setIsLoading] = React.useState(true);
   const [isNewModalOpen, setIsNewModalOpen] = React.useState(false);
+  const [toast, setToast] = React.useState<ToastMessage | null>(null);
 
   // Filter States
   const [search, setSearch] = React.useState('');
@@ -76,6 +87,39 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
     setPage(1);
   };
 
+  const handleExportExcel = () => {
+    try {
+      if (inquiries.length === 0) {
+        setToast({ type: 'info', title: 'No Data', description: 'No inquiry records available to export.' });
+        return;
+      }
+
+      exportToExcel({
+        filename: 'HL_Associates_Inquiries',
+        sheetName: 'Inquiries',
+        columns: [
+          { header: 'Inquiry Reference', key: 'inquiryNumber', width: 18 },
+          { header: 'Company Name', key: 'companyName', width: 28 },
+          { header: 'Primary Contact', key: 'contactName', width: 22 },
+          { header: 'Lead Source', key: 'source', width: 18 },
+          { header: 'Service Scope', key: 'service.name', width: 25 },
+          { header: 'Status', key: 'status', width: 16 },
+          { header: 'Assigned Officer', key: 'assignedTo.fullName', width: 22 },
+          { header: 'Creation Date', key: 'createdAt', width: 18, format: (v) => formatFriendlyDate(v) },
+        ],
+        data: inquiries,
+      });
+
+      setToast({
+        type: 'success',
+        title: 'Excel Export Successful',
+        description: `Exported ${inquiries.length} inquiry records to .xlsx file.`,
+      });
+    } catch (err: any) {
+      setToast({ type: 'error', title: 'Export Failed', description: err?.message || 'Error creating Excel file.' });
+    }
+  };
+
   const getStatusBadge = (st: string) => {
     switch (st) {
       case 'NEW':
@@ -97,39 +141,62 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Toast Notification */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Inquiries</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Manage and track client service inquiries.</p>
+          <p className="text-xs text-slate-500 mt-0.5">Manage and track client service inquiries & compliance leads.</p>
         </div>
 
-        <Button onClick={() => setIsNewModalOpen(true)} variant="primary" size="md" className="w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-1.5" />
-          <span>New Inquiry</span>
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button onClick={handleExportExcel} variant="secondary" size="md" className="flex-1 sm:flex-initial">
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-700" /> Export Excel
+          </Button>
+          <Button onClick={() => setIsNewModalOpen(true)} variant="primary" size="md" className="flex-1 sm:flex-initial">
+            <Plus className="w-4 h-4 mr-1.5" /> New Inquiry
+          </Button>
+        </div>
       </div>
 
-      {/* 4 Summary Cards */}
+      {/* 4 Summary Cards - No flash of dummy numbers */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
           <div className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Inquiries</div>
-          <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 sm:mt-2">{stats.total}</div>
+          {stats ? (
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 sm:mt-2">{stats.total}</div>
+          ) : (
+            <div className="h-8 w-16 bg-slate-100 animate-pulse rounded my-1 sm:my-2" />
+          )}
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
-          <div className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">New</div>
-          <div className="text-2xl sm:text-3xl font-bold text-[#0040e0] mt-1 sm:mt-2">{stats.new}</div>
+          <div className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">New Inquiries</div>
+          {stats ? (
+            <div className="text-2xl sm:text-3xl font-bold text-[#0040e0] mt-1 sm:mt-2">{stats.new}</div>
+          ) : (
+            <div className="h-8 w-16 bg-slate-100 animate-pulse rounded my-1 sm:my-2" />
+          )}
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
           <div className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Proposals Sent</div>
-          <div className="text-2xl sm:text-3xl font-bold text-amber-600 mt-1 sm:mt-2">{stats.proformaSent}</div>
+          {stats ? (
+            <div className="text-2xl sm:text-3xl font-bold text-amber-600 mt-1 sm:mt-2">{stats.proformaSent}</div>
+          ) : (
+            <div className="h-8 w-16 bg-slate-100 animate-pulse rounded my-1 sm:my-2" />
+          )}
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
           <div className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Accepted</div>
-          <div className="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1 sm:mt-2">{stats.accepted}</div>
+          {stats ? (
+            <div className="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1 sm:mt-2">{stats.accepted}</div>
+          ) : (
+            <div className="h-8 w-16 bg-slate-100 animate-pulse rounded my-1 sm:my-2" />
+          )}
         </div>
       </div>
 
@@ -143,7 +210,7 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search ID, Client, or Contact..."
-            className="h-9 w-full rounded border border-slate-200 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
+            className="h-9 w-full rounded border border-slate-300 bg-white pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs"
           />
         </div>
 
@@ -152,7 +219,7 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="h-9 rounded border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue flex-1 sm:flex-initial min-w-[120px]"
+            className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[120px]"
           >
             <option value="">Status: All</option>
             <option value="NEW">New</option>
@@ -167,7 +234,7 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
           <select
             value={serviceId}
             onChange={(e) => setServiceId(e.target.value)}
-            className="h-9 rounded border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue flex-1 sm:flex-initial min-w-[130px]"
+            className="h-9 rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-700 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs flex-1 sm:flex-initial min-w-[130px]"
           >
             <option value="">Service: All</option>
             {initialServices.map((s) => (
@@ -287,7 +354,7 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
         {/* Pagination Footer */}
         <div className="p-3 sm:p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div>
-            Showing 1 to {inquiries.length} of {pagination.total || stats.total} results
+            Showing 1 to {inquiries.length} of {pagination.total || (stats?.total ?? inquiries.length)} results
           </div>
 
           <div className="flex items-center gap-2">

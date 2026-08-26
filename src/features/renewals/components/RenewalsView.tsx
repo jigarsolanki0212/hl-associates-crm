@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import { Toast, ToastMessage } from '@/components/ui/Toast';
+import { exportToExcel } from '@/lib/utils/excelExport';
 import { formatFriendlyDate } from '@/lib/dates/timezone';
 import { getDaysRemaining } from '@/lib/dates/expiryCalculator';
-import { formatCurrency } from '@/lib/utils/currency';
-import { RefreshCw, Send, Play, CheckCircle2, Clock } from 'lucide-react';
+import { RefreshCw, Send, Play, FileSpreadsheet } from 'lucide-react';
 
 interface RenewalsViewProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,7 +25,7 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
   const [renewMonths, setRenewMonths] = React.useState(12);
   const [renewFee, setRenewFee] = React.useState(200000);
   const [isProcessing, setIsProcessing] = React.useState(false);
-  const [feedback, setFeedback] = React.useState<string | null>(null);
+  const [toast, setToast] = React.useState<ToastMessage | null>(null);
 
   const urgentList = services.filter((s) => {
     const d = getDaysRemaining(s.expiryDate);
@@ -51,7 +52,11 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
       const res = await fetch(`/api/renewals/${id}/send`, { method: 'POST' });
       const json = await res.json();
       if (json.success) {
-        setFeedback('Renewal reminder dispatched via email and logged.');
+        setToast({
+          type: 'success',
+          title: 'Renewal Reminder Dispatched',
+          description: 'Client received milestone notification email and activity logged.',
+        });
         router.refresh();
       }
     } catch (err) {
@@ -65,7 +70,11 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
       const res = await fetch('/api/jobs/renewals', { method: 'POST' });
       const json = await res.json();
       if (json.success) {
-        setFeedback(`Automated scan finished. Sent ${json.data.remindersSent} milestone reminders.`);
+        setToast({
+          type: 'success',
+          title: 'Automated Scan Finished',
+          description: `Dispatched ${json.data.remindersSent} scheduled milestone reminder emails.`,
+        });
         router.refresh();
       }
     } catch (err) {
@@ -87,13 +96,56 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
       const json = await res.json();
       if (json.success) {
         setRenewingId(null);
-        setFeedback('Engagement renewal executed successfully.');
+        setToast({
+          type: 'success',
+          title: 'Engagement Renewed',
+          description: `Validity extended by ${renewMonths} months.`,
+        });
         router.refresh();
       }
     } catch (err) {
       console.error('Renew error:', err);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      if (services.length === 0) {
+        setToast({ type: 'info', title: 'No Data', description: 'No renewal pipeline records to export.' });
+        return;
+      }
+
+      exportToExcel({
+        filename: 'HL_Associates_Renewals_Pipeline',
+        sheetName: 'Renewals Pipeline',
+        columns: [
+          { header: 'Company Name', key: 'client.companyName', width: 28 },
+          { header: 'Contact Email', key: 'client.email', width: 26 },
+          { header: 'Service Name', key: 'serviceNameSnapshot', width: 28 },
+          { header: 'Expiry Date', key: 'expiryDate', width: 18, format: (v) => formatFriendlyDate(v) },
+          {
+            header: 'Days Remaining',
+            key: 'expiryDate',
+            width: 16,
+            format: (v) => {
+              const d = getDaysRemaining(v);
+              return d < 0 ? `${Math.abs(d)}d Overdue` : `${d} days`;
+            },
+          },
+          { header: 'Status Tier', key: 'status', width: 16 },
+        ],
+        data: services,
+      });
+
+      setToast({
+        type: 'success',
+        title: 'Excel Export Successful',
+        description: `Exported ${services.length} renewal pipeline records.`,
+      });
+    } catch (err: any) {
+      setToast({ type: 'error', title: 'Export Failed', description: err?.message || 'Error exporting to Excel.' });
     }
   };
 
@@ -141,6 +193,9 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Toast Notification */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
@@ -150,19 +205,15 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
           </p>
         </div>
 
-        <Button onClick={handleTriggerBackgroundJob} variant="secondary" size="md" isLoading={isProcessing} className="w-full sm:w-auto">
-          <Play className="w-4 h-4 mr-1.5 text-emerald-600" /> Run Automated Scan
-        </Button>
-      </div>
-
-      {feedback && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded font-medium flex items-center justify-between">
-          <span>{feedback}</span>
-          <button onClick={() => setFeedback(null)} className="text-emerald-600 font-bold p-1 cursor-pointer">
-            ✕
-          </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button onClick={handleExportExcel} variant="secondary" size="md" className="flex-1 sm:flex-initial">
+            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-emerald-700" /> Export Excel
+          </Button>
+          <Button onClick={handleTriggerBackgroundJob} variant="primary" size="md" isLoading={isProcessing} className="flex-1 sm:flex-initial">
+            <Play className="w-4 h-4 mr-1.5" /> Run Automated Scan
+          </Button>
         </div>
-      )}
+      </div>
 
       {/* Summary KPI Tier Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
