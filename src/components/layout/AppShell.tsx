@@ -1,11 +1,14 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { GlobalSearchModal } from '@/components/search/GlobalSearchModal';
 import { NotificationDrawer, NotificationItem } from '@/components/notifications/NotificationDrawer';
 import { NewInquiryDialog } from '@/features/inquiries/components/NewInquiryDialog';
+import { LayoutDashboard, Inbox, Users, RefreshCw, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 interface AppShellProps {
@@ -27,12 +30,18 @@ export function AppShell({
   servicesList = [],
   usersList = [],
 }: AppShellProps) {
+  const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const [isNewInquiryOpen, setIsNewInquiryOpen] = React.useState(false);
   const [notifications, setNotifications] = React.useState(initialNotifications);
+
+  // Close mobile drawer when route changes
+  React.useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   // Keyboard shortcut listener for CMD+K / CTRL+K
   React.useEffect(() => {
@@ -57,8 +66,15 @@ export function AppShell({
     }
   };
 
+  const mobileNavTabs = [
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Inquiries', href: '/inquiries', icon: Inbox },
+    { label: 'Clients', href: '/clients', icon: Users },
+    { label: 'Renewals', href: '/renewals', icon: RefreshCw },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#fbf9fa] flex flex-col antialiased">
+    <div className="min-h-screen min-h-dvh bg-[#fbf9fa] flex flex-col antialiased">
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <Sidebar
@@ -68,38 +84,35 @@ export function AppShell({
         />
       </div>
 
-      {/* Mobile Drawer Navigation */}
+      {/* Mobile Slide-Over Drawer Navigation */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden bg-slate-900/50 backdrop-blur-xs flex">
-          <div className="w-[280px] bg-white h-full shadow-2xl flex flex-col">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <span className="font-bold text-slate-900 text-sm">Regulato CRM</span>
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-1 text-slate-500 hover:text-slate-900 text-xs font-semibold"
-              >
-                Close ✕
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <Sidebar
-                isCollapsed={false}
-                onToggleCollapse={() => {}}
-                onOpenNewInquiry={() => {
-                  setIsMobileMenuOpen(false);
-                  setIsNewInquiryOpen(true);
-                }}
-              />
-            </div>
+        <div className="fixed inset-0 z-50 md:hidden flex animate-fade-in">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Drawer Panel */}
+          <div className="relative w-[290px] max-w-[85vw] bg-white h-full shadow-2xl flex flex-col z-10 animate-slide-in-left">
+            <Sidebar
+              isCollapsed={false}
+              isMobileDrawer={true}
+              onCloseMobileDrawer={() => setIsMobileMenuOpen(false)}
+              onOpenNewInquiry={() => {
+                setIsMobileMenuOpen(false);
+                setIsNewInquiryOpen(true);
+              }}
+            />
           </div>
-          <div className="flex-1" onClick={() => setIsMobileMenuOpen(false)} />
         </div>
       )}
 
       {/* Main Content Area */}
       <div
         className={cn(
-          'flex-1 flex flex-col transition-all duration-300',
+          'flex-1 flex flex-col transition-all duration-300 min-w-0',
           isCollapsed ? 'md:pl-[72px]' : 'md:pl-[280px]'
         )}
       >
@@ -112,10 +125,43 @@ export function AppShell({
           user={user}
         />
 
-        <main className="flex-1 px-4 md:px-8 py-6 max-w-[1440px] w-full mx-auto animate-fade-in">
+        <main className="flex-1 px-3 sm:px-6 md:px-8 py-4 sm:py-6 max-w-[1440px] w-full mx-auto animate-fade-in pb-20 md:pb-8 touch-scroll">
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar for quick thumb navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-1.5 flex items-center justify-around pb-safe shadow-lg">
+        {mobileNavTabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cn(
+                'flex flex-col items-center justify-center py-1 px-2.5 rounded text-[10px] font-medium transition-colors min-w-[56px]',
+                isActive ? 'text-[#0040e0] font-bold' : 'text-slate-500 hover:text-slate-900 active:bg-slate-100'
+              )}
+            >
+              <Icon className={cn('w-5 h-5 mb-0.5', isActive ? 'text-[#0040e0]' : 'text-slate-500')} />
+              <span>{tab.label}</span>
+            </Link>
+          );
+        })}
+
+        {/* More / Menu Drawer Toggle */}
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className={cn(
+            'flex flex-col items-center justify-center py-1 px-2.5 rounded text-[10px] font-medium text-slate-500 hover:text-slate-900 active:bg-slate-100 min-w-[56px] cursor-pointer',
+            isMobileMenuOpen && 'text-[#0040e0] font-bold'
+          )}
+        >
+          <Menu className="w-5 h-5 mb-0.5" />
+          <span>Menu</span>
+        </button>
+      </nav>
 
       {/* Modals and Drawers */}
       <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />

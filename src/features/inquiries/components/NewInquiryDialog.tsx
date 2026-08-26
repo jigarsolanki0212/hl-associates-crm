@@ -101,14 +101,14 @@ export function NewInquiryDialog({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Client Inquiry" size="md">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-4">
         {serverError && (
           <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded font-medium">
             {serverError}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Company Name *</label>
             <Input {...register('companyName')} placeholder="e.g. Vanguard Holdings Ltd" error={errors.companyName?.message} />
@@ -120,7 +120,7 @@ export function NewInquiryDialog({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Contact Title</label>
             <Input {...register('contactTitle')} placeholder="e.g. Managing Director" />
@@ -132,7 +132,7 @@ export function NewInquiryDialog({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
             <Input {...register('phone')} placeholder="+91 98200 12345" />
@@ -142,7 +142,7 @@ export function NewInquiryDialog({
             <label className="block text-xs font-semibold text-slate-700 mb-1">Inquiry Source</label>
             <select
               {...register('source')}
-              className="flex h-9 w-full rounded border border-slate-200 bg-white px-3 py-1 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
+              className="flex h-9 w-full rounded border border-slate-200 bg-white px-3 py-1 text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
             >
               <option value="EXHIBITION">Exhibition</option>
               <option value="REFERRAL">Direct Referral</option>
@@ -155,12 +155,12 @@ export function NewInquiryDialog({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Regulatory Service</label>
             <select
               {...register('serviceId')}
-              className="flex h-9 w-full rounded border border-slate-200 bg-white px-3 py-1 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
+              className="flex h-9 w-full rounded border border-slate-200 bg-white px-3 py-1 text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
             >
               <option value="">Select Service Area...</option>
               {services.map((s) => (
@@ -175,7 +175,7 @@ export function NewInquiryDialog({
             <label className="block text-xs font-semibold text-slate-700 mb-1">Assigned Sales Rep</label>
             <select
               {...register('assignedToId')}
-              className="flex h-9 w-full rounded border border-slate-200 bg-white px-3 py-1 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
+              className="flex h-9 w-full rounded border border-slate-200 bg-white px-3 py-1 text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
             >
               <option value="">Select Sales Rep...</option>
               {users.map((u) => (
@@ -196,7 +196,7 @@ export function NewInquiryDialog({
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 shrink-0">
           <Button type="button" variant="secondary" size="sm" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>

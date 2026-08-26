@@ -41,19 +41,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fbf9fa] flex flex-col justify-center items-center p-4">
-      <div className="w-full max-w-[420px] bg-white rounded-lg border border-slate-200 p-8 shadow-card">
+    <div className="min-h-screen min-h-dvh bg-[#fbf9fa] flex flex-col justify-center items-center p-3 sm:p-6 py-6 sm:py-12 overflow-y-auto touch-scroll">
+      <div className="w-full max-w-[420px] bg-white rounded-lg border border-slate-200 p-5 sm:p-8 shadow-card my-auto">
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-12 h-12 rounded bg-[#0040e0] flex items-center justify-center text-white font-bold text-lg mb-3 shadow-sm">
+        <div className="flex flex-col items-center text-center mb-5 sm:mb-6">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded bg-[#0040e0] flex items-center justify-center text-white font-bold text-base sm:text-lg mb-2.5 sm:mb-3 shadow-sm">
             HL
           </div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">HL Associates CRM</h1>
-          <p className="text-xs text-slate-500 mt-1">Enterprise Regulatory Compliance Suite</p>
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">HL Associates CRM</h1>
+          <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Enterprise Regulatory Compliance Suite</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-3.5 sm:space-y-4">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded font-medium">
               {error}
@@ -95,7 +95,7 @@ export default function LoginPage() {
         </form>
 
         {/* Demo Credentials Quick Fill */}
-        <div className="mt-6 pt-5 border-t border-slate-100">
+        <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-slate-100">
           <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             <span>Demo Test Accounts:</span>
@@ -107,10 +107,10 @@ export default function LoginPage() {
                 setEmail('admin@hlassociates.com');
                 setPassword('Password123!');
               }}
-              className="p-2 rounded bg-slate-50 border border-slate-200 hover:bg-blue-50 text-left transition-colors cursor-pointer"
+              className="p-2 sm:p-2.5 rounded bg-slate-50 border border-slate-200 hover:bg-blue-50 active:bg-blue-100 text-left transition-colors cursor-pointer"
             >
-              <div className="font-bold text-slate-800">Admin Account</div>
-              <div className="text-[11px] text-slate-500">Alex Mercer</div>
+              <div className="font-bold text-slate-800 text-[11px] sm:text-xs">Admin Account</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-500">Alex Mercer</div>
             </button>
             <button
               type="button"
@@ -118,16 +118,16 @@ export default function LoginPage() {
                 setEmail('sales@hlassociates.com');
                 setPassword('Password123!');
               }}
-              className="p-2 rounded bg-slate-50 border border-slate-200 hover:bg-blue-50 text-left transition-colors cursor-pointer"
+              className="p-2 sm:p-2.5 rounded bg-slate-50 border border-slate-200 hover:bg-blue-50 active:bg-blue-100 text-left transition-colors cursor-pointer"
             >
-              <div className="font-bold text-slate-800">Sales Account</div>
-              <div className="text-[11px] text-slate-500">Sarah Jenkins</div>
+              <div className="font-bold text-slate-800 text-[11px] sm:text-xs">Sales Account</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-500">Sarah Jenkins</div>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="text-center text-xs text-slate-400 mt-6">
+      <div className="text-center text-[11px] sm:text-xs text-slate-400 mt-4 sm:mt-6 pb-safe">
         &copy; {new Date().getFullYear()} HL Associates. Secure Compliance Portal.
       </div>
     </div>

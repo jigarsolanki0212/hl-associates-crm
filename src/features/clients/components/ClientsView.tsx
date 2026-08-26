@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { Textarea } from '@/components/ui/Textarea';
 import { Users, ShieldCheck, Clock, AlertTriangle, Download, Plus, Search, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { formatFriendlyDate } from '@/lib/dates/timezone';
 import { getDaysRemaining } from '@/lib/dates/expiryCalculator';
@@ -113,8 +112,17 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
   };
 
   const exportCsv = () => {
-    const headers = ['Client Number', 'Company Name', 'Contact Name', 'Email', 'Phone', 'Status'];
-    const rows = clients.map((c) => [c.clientNumber, c.companyName, c.contactName, c.email, c.phone || '', c.status]);
+    if (clients.length === 0) return;
+    const headers = ['Client ID', 'Company', 'Contact', 'Email', 'Status', 'Active Service', 'Expiry Date'];
+    const rows = clients.map((c) => [
+      c.clientNumber,
+      `"${c.companyName.replace(/"/g, '""')}"`,
+      `"${c.contactName.replace(/"/g, '""')}"`,
+      c.email,
+      c.status,
+      `"${(c.services[0]?.serviceNameSnapshot || 'None').replace(/"/g, '""')}"`,
+      c.services[0]?.expiryDate ? new Date(c.services[0].expiryDate).toISOString().slice(0, 10) : 'N/A',
+    ]);
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
@@ -126,67 +134,67 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
   };
 
   return (
-    <div className="space-y-6">
-      {/* Page Header (Screenshot 4) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Clients</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Clients</h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Manage active engagements and monitor compliance renewals.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Button onClick={exportCsv} variant="secondary" size="md">
+        <div className="flex items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+          <Button onClick={exportCsv} variant="secondary" size="md" className="flex-1 sm:flex-initial">
             <Download className="w-4 h-4 mr-1.5" /> Export
           </Button>
-          <Button onClick={() => setIsNewClientOpen(true)} variant="primary" size="md">
+          <Button onClick={() => setIsNewClientOpen(true)} variant="primary" size="md" className="flex-1 sm:flex-initial">
             <Plus className="w-4 h-4 mr-1.5" /> New Client
           </Button>
         </div>
       </div>
 
-      {/* 4 Summary Cards (Screenshot 4) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-card">
+      {/* 4 Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">TOTAL CLIENTS</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">TOTAL CLIENTS</span>
             <Users className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-3xl font-bold text-slate-900 mt-2">{stats.totalClients}</div>
-          <div className="text-xs text-emerald-600 font-semibold mt-1">↑ +12 this month</div>
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 sm:mt-2">{stats.totalClients}</div>
+          <div className="text-[11px] sm:text-xs text-emerald-600 font-semibold mt-1">↑ +12 this month</div>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-card">
+        <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">ACTIVE SERVICES</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">ACTIVE SERVICES</span>
             <ShieldCheck className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-3xl font-bold text-slate-900 mt-2">{stats.activeServices}</div>
-          <div className="text-xs text-slate-500 font-medium mt-1">Stable load</div>
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1 sm:mt-2">{stats.activeServices}</div>
+          <div className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">Stable load</div>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-card">
+        <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">EXPIRING SOON</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">EXPIRING SOON</span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-3xl font-bold text-amber-600 mt-2">{stats.expiringSoon}</div>
-          <div className="text-xs text-slate-500 font-medium mt-1">Within 30 days</div>
+          <div className="text-2xl sm:text-3xl font-bold text-amber-600 mt-1 sm:mt-2">{stats.expiringSoon}</div>
+          <div className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">Within 30 days</div>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-card border-l-4 border-l-red-500">
+        <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card border-l-4 border-l-red-500">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">EXPIRED</span>
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">EXPIRED</span>
             <AlertTriangle className="w-4 h-4 text-red-500" />
           </div>
-          <div className="text-3xl font-bold text-red-600 mt-2">{stats.expired}</div>
-          <div className="text-xs text-red-600 font-medium mt-1">Requires action</div>
+          <div className="text-2xl sm:text-3xl font-bold text-red-600 mt-1 sm:mt-2">{stats.expired}</div>
+          <div className="text-[11px] sm:text-xs text-red-600 font-medium mt-1">Requires action</div>
         </div>
       </div>
 
-      {/* Filter Bar (Screenshot 4) */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-card flex flex-wrap items-center gap-3">
+      {/* Filter Bar */}
+      <div className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 shadow-card flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -198,39 +206,37 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
           />
         </div>
 
-        <select
-          value={serviceId}
-          onChange={(e) => setServiceId(e.target.value)}
-          className="h-9 rounded border border-slate-200 bg-white px-3 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue min-w-[140px]"
-        >
-          <option value="">All Services</option>
-          {initialServices.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={serviceId}
+            onChange={(e) => setServiceId(e.target.value)}
+            className="h-9 rounded border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue flex-1 sm:flex-initial min-w-[130px]"
+          >
+            <option value="">All Services</option>
+            {initialServices.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
 
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="h-9 rounded border border-slate-200 bg-white px-3 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue min-w-[130px]"
-        >
-          <option value="">Status: All</option>
-          <option value="ACTIVE">Active</option>
-          <option value="INACTIVE">Inactive</option>
-          <option value="CHURNED">Churned</option>
-        </select>
-
-        <button className="h-9 px-3 border border-slate-200 rounded text-slate-600 hover:bg-slate-50 flex items-center justify-center">
-          <SlidersHorizontal className="w-4 h-4" />
-        </button>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="h-9 rounded border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue flex-1 sm:flex-initial min-w-[120px]"
+          >
+            <option value="">Status: All</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+            <option value="CHURNED">Churned</option>
+          </select>
+        </div>
       </div>
 
-      {/* Clients Table (Screenshot 4) */}
+      {/* Clients Table */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto touch-scroll">
+          <table className="w-full text-left text-xs whitespace-nowrap min-w-[650px]">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 <th className="py-3 px-4">Client</th>
@@ -261,18 +267,18 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
 
                   return (
                     <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         <Link href={`/clients/${c.id}`} className="hover:underline">
                           <div className="font-bold text-slate-900">{c.companyName}</div>
                           <div className="text-[11px] text-slate-500 font-medium">{c.contactName}</div>
                         </Link>
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-700 font-medium">
+                      <td className="py-3 px-4 text-slate-700 font-medium max-w-[200px] truncate">
                         {primaryService?.serviceNameSnapshot || 'No active service'}
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         {primaryService ? (
                           <div>
                             <div className="font-semibold text-slate-900">{formatFriendlyDate(primaryService.expiryDate)}</div>
@@ -293,24 +299,24 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         <Badge variant="active">{c.status}</Badge>
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         {c.assignedTo ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                            <div className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center shrink-0">
                               {c.assignedTo.fullName.charAt(0)}
                             </div>
-                            <span className="text-slate-700 truncate">{c.assignedTo.fullName}</span>
+                            <span className="text-slate-700 truncate max-w-[120px]">{c.assignedTo.fullName}</span>
                           </div>
                         ) : (
                           <span className="text-slate-400 italic">Unassigned</span>
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3 px-4 text-right">
                         <Link
                           href={`/clients/${c.id}`}
                           className="text-xs font-semibold text-[#0040e0] hover:underline"
@@ -326,8 +332,8 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
           </table>
         </div>
 
-        {/* Pagination Footer (Screenshot 4) */}
-        <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        {/* Pagination Footer */}
+        <div className="p-3 sm:p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div>
             Showing 1 to {clients.length} of {pagination.total || stats.totalClients} entries
           </div>
@@ -355,13 +361,13 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
 
       {/* New Client Modal */}
       <Modal isOpen={isNewClientOpen} onClose={() => setIsNewClientOpen(false)} title="Create New Client Profile" size="md">
-        <form onSubmit={handleCreateClient} className="space-y-4 text-xs">
+        <form onSubmit={handleCreateClient} className="space-y-3 sm:space-y-4 text-xs">
           <div>
             <label className="block font-semibold text-slate-700 mb-1">Company Name *</label>
             <Input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} required />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Primary Contact *</label>
               <Input value={newContact} onChange={(e) => setNewContact(e.target.value)} required />
@@ -372,7 +378,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Phone</label>
               <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />

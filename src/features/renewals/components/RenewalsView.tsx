@@ -101,27 +101,27 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
     const daysLeft = getDaysRemaining(s.expiryDate);
     return (
       <tr key={s.id} className="hover:bg-slate-50 transition-colors">
-        <td className="py-3.5 px-4">
+        <td className="py-3 px-4">
           <Link href={`/clients/${s.clientId}`} className="font-bold text-slate-900 hover:text-[#0040e0]">
             {s.client.companyName}
           </Link>
-          <div className="text-[11px] text-slate-500">{s.client.email}</div>
+          <div className="text-[11px] text-slate-500 truncate max-w-[160px]">{s.client.email}</div>
         </td>
-        <td className="py-3.5 px-4 font-semibold text-slate-700">{s.serviceNameSnapshot}</td>
-        <td className="py-3.5 px-4 text-slate-600">{formatFriendlyDate(s.expiryDate)}</td>
-        <td className="py-3.5 px-4 font-bold">
+        <td className="py-3 px-4 font-semibold text-slate-700 max-w-[180px] truncate">{s.serviceNameSnapshot}</td>
+        <td className="py-3 px-4 text-slate-600">{formatFriendlyDate(s.expiryDate)}</td>
+        <td className="py-3 px-4 font-bold">
           <span className={daysLeft <= 15 ? 'text-red-600' : daysLeft <= 30 ? 'text-amber-600' : 'text-slate-700'}>
             {daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft} days`}
           </span>
         </td>
-        <td className="py-3.5 px-4">
+        <td className="py-3 px-4">
           <Badge variant={daysLeft <= 15 ? 'urgent' : daysLeft <= 30 ? 'actionNeeded' : 'normal'}>
             {daysLeft < 0 ? 'Expired' : daysLeft <= 15 ? 'Urgent' : daysLeft <= 30 ? 'Action Needed' : 'Normal'}
           </Badge>
         </td>
-        <td className="py-3.5 px-4 text-right space-x-2">
-          <Button onClick={() => handleSendReminder(s.id)} variant="secondary" size="sm">
-            <Send className="w-3.5 h-3.5 mr-1 text-[#0040e0]" /> Remind
+        <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+          <Button onClick={() => handleSendReminder(s.id)} variant="secondary" size="sm" className="h-7 px-2 text-xs">
+            <Send className="w-3 h-3 mr-1 text-[#0040e0]" /> Remind
           </Button>
           <Button
             onClick={() => {
@@ -130,8 +130,9 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
             }}
             variant="primary"
             size="sm"
+            className="h-7 px-2 text-xs"
           >
-            <RefreshCw className="w-3.5 h-3.5 mr-1" /> Renew
+            <RefreshCw className="w-3 h-3 mr-1" /> Renew
           </Button>
         </td>
       </tr>
@@ -139,57 +140,57 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Compliance Renewal Pipeline</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Compliance Renewal Pipeline</h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Automated milestone monitoring (60d, 30d, 7d, 0d) for regulatory licenses.
           </p>
         </div>
 
-        <Button onClick={handleTriggerBackgroundJob} variant="secondary" size="md" isLoading={isProcessing}>
-          <Play className="w-4 h-4 mr-1.5 text-emerald-600" /> Run Automated Reminder Scan
+        <Button onClick={handleTriggerBackgroundJob} variant="secondary" size="md" isLoading={isProcessing} className="w-full sm:w-auto">
+          <Play className="w-4 h-4 mr-1.5 text-emerald-600" /> Run Automated Scan
         </Button>
       </div>
 
       {feedback && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded font-medium flex items-center justify-between">
           <span>{feedback}</span>
-          <button onClick={() => setFeedback(null)} className="text-emerald-600 font-bold">
+          <button onClick={() => setFeedback(null)} className="text-emerald-600 font-bold p-1 cursor-pointer">
             ✕
           </button>
         </div>
       )}
 
       {/* Summary KPI Tier Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-card border-l-4 border-l-red-500">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">URGENT (&le;15 DAYS)</div>
-          <div className="text-3xl font-bold text-red-600 mt-2">{urgentList.length}</div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card border-l-4 border-l-red-500">
+          <div className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">URGENT (&le;15 DAYS)</div>
+          <div className="text-2xl sm:text-3xl font-bold text-red-600 mt-1 sm:mt-2">{urgentList.length}</div>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-card border-l-4 border-l-amber-500">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">ACTION NEEDED (&le;30 DAYS)</div>
-          <div className="text-3xl font-bold text-amber-600 mt-2">{actionList.length}</div>
+        <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card border-l-4 border-l-amber-500">
+          <div className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">ACTION (&le;30 DAYS)</div>
+          <div className="text-2xl sm:text-3xl font-bold text-amber-600 mt-1 sm:mt-2">{actionList.length}</div>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-card border-l-4 border-l-blue-600">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">UPCOMING (&le;60 DAYS)</div>
-          <div className="text-3xl font-bold text-[#0040e0] mt-2">{upcomingList.length}</div>
+        <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card border-l-4 border-l-blue-600">
+          <div className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">UPCOMING (&le;60 DAYS)</div>
+          <div className="text-2xl sm:text-3xl font-bold text-[#0040e0] mt-1 sm:mt-2">{upcomingList.length}</div>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-card">
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">EXPIRED OVERDUE</div>
-          <div className="text-3xl font-bold text-slate-700 mt-2">{expiredList.length}</div>
+        <div className="bg-white rounded-lg border border-slate-200 p-3.5 sm:p-5 shadow-card">
+          <div className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">OVERDUE / EXPIRED</div>
+          <div className="text-2xl sm:text-3xl font-bold text-slate-700 mt-1 sm:mt-2">{expiredList.length}</div>
         </div>
       </div>
 
       {/* Renewals Table */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto touch-scroll">
+          <table className="w-full text-left text-xs whitespace-nowrap min-w-[650px]">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 <th className="py-3 px-4">Client</th>
@@ -217,7 +218,7 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
 
       {/* Renew Modal */}
       <Modal isOpen={!!renewingId} onClose={() => setRenewingId(null)} title="Execute Engagement Renewal" size="sm">
-        <div className="space-y-4 text-xs">
+        <div className="space-y-3 sm:space-y-4 text-xs">
           <div>
             <label className="block font-semibold text-slate-700 mb-1">Validity Extension (Months)</label>
             <Input
@@ -236,7 +237,7 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
             <Button variant="secondary" size="sm" onClick={() => setRenewingId(null)}>
               Cancel
             </Button>

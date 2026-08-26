@@ -70,9 +70,9 @@ export default async function DashboardPage() {
   const maxDemand = Math.max(...serviceDemand.map((s) => s.count));
 
   return (
-    <div className="space-y-6">
-      {/* 4 KPI Cards (Stitch Screenshot 1) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+    <div className="space-y-4 sm:space-y-6">
+      {/* 4 KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
         <KpiCard
           title="Total Inquiries"
           value={totalInquiries || 142}
@@ -100,15 +100,14 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Inquiry Source & Service Demand Visual Cards (Screenshot 1) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left: Inquiry Source Donut / Diamond Graphic (5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-lg border border-slate-200 p-6 shadow-card flex flex-col justify-between">
-          <h3 className="text-base font-bold text-slate-900 mb-4">Inquiry Source</h3>
+      {/* Inquiry Source & Service Demand Visual Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
+        {/* Left: Inquiry Source Donut Graphic (5 cols) */}
+        <div className="lg:col-span-5 bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card flex flex-col justify-between">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-3 sm:mb-4">Inquiry Source</h3>
 
-          <div className="flex flex-col items-center justify-center my-4">
-            {/* Geometric diamond / donut container matching Screenshot 1 */}
-            <div className="relative w-44 h-44 flex items-center justify-center">
+          <div className="flex flex-col items-center justify-center my-2 sm:my-4">
+            <div className="relative w-36 h-36 sm:w-44 sm:h-44 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-45" viewBox="0 0 100 100">
                 <rect x="15" y="15" width="70" height="70" fill="none" stroke="#041627" strokeWidth="12" strokeDasharray="60 140" strokeDashoffset="0" />
                 <rect x="15" y="15" width="70" height="70" fill="none" stroke="#0040e0" strokeWidth="12" strokeDasharray="45 155" strokeDashoffset="-60" />
@@ -116,18 +115,18 @@ export default async function DashboardPage() {
                 <rect x="15" y="15" width="70" height="70" fill="none" stroke="#e2e8f0" strokeWidth="12" strokeDasharray="20 180" strokeDashoffset="-130" />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-xl font-bold text-slate-900">{totalInquiries || 142}</span>
-                <span className="text-[11px] text-slate-400 font-medium">Total</span>
+                <span className="text-lg sm:text-xl font-bold text-slate-900">{totalInquiries || 142}</span>
+                <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">Total</span>
               </div>
             </div>
 
             {/* Source breakdown legend */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-6 w-full max-w-[280px]">
+            <div className="grid grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-2 mt-4 sm:mt-6 w-full max-w-[280px]">
               {sourceStats.map((item) => (
                 <div key={item.label} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-xs" style={{ backgroundColor: item.color }} />
-                    <span className="text-slate-600">{item.label}</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="w-2.5 h-2.5 rounded-xs shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-slate-600 truncate">{item.label}</span>
                   </div>
                   <span className="font-semibold text-slate-900">{item.percent}%</span>
                 </div>
@@ -137,28 +136,28 @@ export default async function DashboardPage() {
         </div>
 
         {/* Right: Service Demand Bar Chart (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-lg border border-slate-200 p-6 shadow-card flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card flex flex-col justify-between">
           <div>
-            <h3 className="text-base font-bold text-slate-900 mb-1">Service Demand</h3>
-            <div className="border-b border-slate-100 mt-3 mb-6" />
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-1">Service Demand</h3>
+            <div className="border-b border-slate-100 mt-2 sm:mt-3 mb-4 sm:mb-6" />
           </div>
 
-          <div className="h-48 flex items-end justify-between gap-4 px-2 sm:px-6">
+          <div className="h-44 sm:h-48 flex items-end justify-between gap-2 sm:gap-4 px-1 sm:px-6">
             {serviceDemand.map((service) => {
               const heightPercent = Math.round((service.count / maxDemand) * 100);
               return (
-                <div key={service.name} className="flex-1 flex flex-col items-center gap-2 group">
-                  <div className="w-full flex justify-center items-end h-36">
+                <div key={service.name} className="flex-1 flex flex-col items-center gap-1.5 sm:gap-2 group">
+                  <div className="w-full flex justify-center items-end h-32 sm:h-36">
                     <div
-                      className="w-12 sm:w-16 bg-[#e5eeff] group-hover:bg-[#0040e0] transition-colors rounded-t flex items-start justify-center pt-2"
-                      style={{ height: `${Math.max(15, heightPercent)}%` }}
+                      className="w-8 sm:w-16 bg-[#e5eeff] group-hover:bg-[#0040e0] transition-colors rounded-t flex items-start justify-center pt-1.5 sm:pt-2"
+                      style={{ height: `${Math.max(18, heightPercent)}%` }}
                     >
-                      <span className="text-[11px] font-bold text-[#0040e0] group-hover:text-white transition-colors">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-[#0040e0] group-hover:text-white transition-colors">
                         {service.count}
                       </span>
                     </div>
                   </div>
-                  <span className="text-[11px] font-semibold text-slate-600 text-center leading-tight truncate w-full">
+                  <span className="text-[10px] sm:text-[11px] font-semibold text-slate-600 text-center leading-tight truncate w-full">
                     {service.name}
                   </span>
                 </div>
@@ -168,10 +167,10 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Expiring Soon Table (Screenshot 1) */}
+      {/* Expiring Soon Table */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-card overflow-hidden">
-        <div className="p-5 flex items-center justify-between border-b border-slate-100">
-          <h3 className="text-base font-bold text-slate-900">Expiring Soon</h3>
+        <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-100">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900">Expiring Soon</h3>
           <Link
             href="/renewals"
             className="text-xs font-semibold text-[#0040e0] hover:underline flex items-center gap-1"
@@ -180,16 +179,16 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto touch-scroll">
+          <table className="w-full text-left text-xs sm:text-sm whitespace-nowrap min-w-[600px]">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                <th className="py-3 px-5">Client</th>
-                <th className="py-3 px-5">Service</th>
-                <th className="py-3 px-5">Expiry Date</th>
-                <th className="py-3 px-5">Days Remaining</th>
-                <th className="py-3 px-5">Status</th>
-                <th className="py-3 px-5 text-right">Actions</th>
+                <th className="py-3 px-4 sm:px-5">Client</th>
+                <th className="py-3 px-4 sm:px-5">Service</th>
+                <th className="py-3 px-4 sm:px-5">Expiry Date</th>
+                <th className="py-3 px-4 sm:px-5">Days Remaining</th>
+                <th className="py-3 px-4 sm:px-5">Status</th>
+                <th className="py-3 px-4 sm:px-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -207,14 +206,14 @@ export default async function DashboardPage() {
 
                   return (
                     <tr key={cs.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-5 font-semibold text-slate-900">
+                      <td className="py-3 sm:py-3.5 px-4 sm:px-5 font-semibold text-slate-900">
                         <Link href={`/clients/${cs.clientId}`} className="hover:text-[#0040e0]">
                           {cs.client.companyName}
                         </Link>
                       </td>
-                      <td className="py-3.5 px-5 text-slate-600 font-medium">{cs.serviceNameSnapshot}</td>
-                      <td className="py-3.5 px-5 text-slate-600">{formatDateZoned(cs.expiryDate)}</td>
-                      <td className="py-3.5 px-5">
+                      <td className="py-3 sm:py-3.5 px-4 sm:px-5 text-slate-600 font-medium">{cs.serviceNameSnapshot}</td>
+                      <td className="py-3 sm:py-3.5 px-4 sm:px-5 text-slate-600">{formatDateZoned(cs.expiryDate)}</td>
+                      <td className="py-3 sm:py-3.5 px-4 sm:px-5">
                         <span
                           className={`font-bold ${
                             isUrgent ? 'text-red-600' : isAction ? 'text-amber-600' : 'text-slate-700'
@@ -223,12 +222,12 @@ export default async function DashboardPage() {
                           {daysLeft}
                         </span>
                       </td>
-                      <td className="py-3.5 px-5">
+                      <td className="py-3 sm:py-3.5 px-4 sm:px-5">
                         <Badge variant={isUrgent ? 'urgent' : isAction ? 'actionNeeded' : 'normal'}>
                           {isUrgent ? 'Urgent' : isAction ? 'Action Needed' : 'Normal'}
                         </Badge>
                       </td>
-                      <td className="py-3.5 px-5 text-right">
+                      <td className="py-3 sm:py-3.5 px-4 sm:px-5 text-right">
                         <Link
                           href={`/clients/${cs.clientId}`}
                           className="text-xs font-semibold text-[#0040e0] hover:underline"
@@ -244,9 +243,9 @@ export default async function DashboardPage() {
           </table>
         </div>
 
-        {/* Pagination Footer matching Screenshot 1 */}
-        <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-6 text-xs text-slate-500">
-          <div className="flex items-center gap-2">
+        {/* Pagination Footer */}
+        <div className="p-3 sm:p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between sm:justify-end gap-3 sm:gap-6 text-xs text-slate-500">
+          <div className="hidden sm:flex items-center gap-2">
             <span>Rows per page:</span>
             <span className="font-semibold text-slate-700">10</span>
           </div>

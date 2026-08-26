@@ -107,11 +107,14 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
             detailedScope,
             suggestedPriceMin: priceMin !== '' ? Number(priceMin) : null,
             suggestedPriceMax: priceMax !== '' ? Number(priceMax) : null,
+            pricingType: 'RANGE',
+            defaultDuration: 12,
+            durationUnit: 'MONTHS',
           }),
         });
         const json = await res.json();
         if (json.success) {
-          setServices((prev) => [...prev, json.data]);
+          setServices((prev) => [json.data, ...prev]);
           setIsAddOpen(false);
         }
       }
@@ -129,72 +132,63 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
     setCategory(service.category);
     setDescription(service.description);
     setDetailedScope(service.detailedScope || '');
-    setPriceMin(service.suggestedPriceMin ?? '');
-    setPriceMax(service.suggestedPriceMax ?? '');
+    setPriceMin(service.suggestedPriceMin || '');
+    setPriceMax(service.suggestedPriceMax || '');
   };
 
-  const openAddModal = () => {
-    setEditingService(null);
-    setName('');
-    setCode('');
-    setCategory('Regulatory Compliance');
-    setDescription('');
-    setDetailedScope('');
-    setPriceMin('');
-    setPriceMax('');
-    setIsAddOpen(true);
-  };
-
-  const getServiceIcon = (name: string) => {
-    if (name.includes('ISO')) return <Award className="w-5 h-5 text-blue-600" />;
-    if (name.includes('CE') || name.includes('MDR')) return <ShieldCheck className="w-5 h-5 text-blue-600" />;
-    if (name.includes('FDA')) return <Sliders className="w-5 h-5 text-slate-500" />;
-    return <FileCheck2 className="w-5 h-5 text-blue-600" />;
+  const getCategoryIcon = (cat: string) => {
+    if (cat.includes('QMS') || cat.includes('ISO')) return <ShieldCheck className="w-5 h-5 text-[#0040e0]" />;
+    if (cat.includes('Indian') || cat.includes('CDSCO')) return <FileCheck2 className="w-5 h-5 text-amber-600" />;
+    if (cat.includes('European') || cat.includes('CE')) return <Award className="w-5 h-5 text-purple-600" />;
+    return <Sliders className="w-5 h-5 text-slate-700" />;
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header (Screenshot 5) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Service Management</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            Service Catalog & Scope Library
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Manage regulatory services, pricing configurations, and availability.
+            Configure standardized compliance offerings, commercial pricing templates, and technical scopes.
           </p>
         </div>
 
-        <Button onClick={openAddModal} variant="primary" size="md">
-          <Plus className="w-4 h-4 mr-1.5" /> Add Service
+        <Button onClick={() => setIsAddOpen(true)} variant="primary" size="md" className="w-full sm:w-auto">
+          <Plus className="w-4 h-4 mr-1.5" />
+          <span>Add New Service</span>
         </Button>
       </div>
 
-      {/* Grid of Service Cards (Screenshot 5) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Services Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {services.map((service) => {
           const pricingDisplay =
             service.suggestedPriceMin && service.suggestedPriceMax
               ? `${formatCurrency(service.suggestedPriceMin)} - ${formatCurrency(service.suggestedPriceMax)}`
               : service.suggestedPriceMin
               ? formatCurrency(service.suggestedPriceMin)
-              : 'Custom Quote';
+              : 'Custom / Fixed';
 
           return (
             <div
               key={service.id}
-              className={`bg-white rounded-lg border p-6 shadow-card flex flex-col justify-between transition-all ${
-                service.isActive ? 'border-slate-200' : 'border-slate-200 opacity-75'
+              className={`bg-white rounded-lg border p-4 sm:p-6 shadow-card flex flex-col justify-between transition-all ${
+                service.isActive ? 'border-slate-200' : 'border-slate-200 opacity-60 bg-slate-50/50'
               }`}
             >
               <div>
-                {/* Card Top: Icon + Title + Switch (Screenshot 5) */}
-                <div className="flex items-center justify-between gap-3 mb-4">
+                {/* Header Icon + Code + Active Switch */}
+                <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded bg-blue-50/60 border border-blue-100 flex items-center justify-center shrink-0">
-                      {getServiceIcon(service.name)}
+                    <div className="w-10 h-10 rounded bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
+                      {getCategoryIcon(service.category)}
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-slate-900 leading-tight">{service.name}</h3>
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{service.code}</span>
+                      <h3 className="font-bold text-sm text-slate-900 leading-tight">{service.name}</h3>
+                      <div className="text-[11px] font-mono text-slate-500 mt-0.5">{service.code} • {service.category}</div>
                     </div>
                   </div>
 
@@ -205,12 +199,12 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
                 </div>
 
                 {/* Scope Description */}
-                <p className="text-xs text-slate-600 leading-relaxed min-h-[48px] line-clamp-3 mb-5 font-normal">
+                <p className="text-xs text-slate-600 leading-relaxed min-h-[44px] line-clamp-3 mb-4 sm:mb-5 font-normal">
                   {service.description}
                 </p>
 
-                {/* SUGGESTED PRICING box (Screenshot 5) */}
-                <div className="p-3.5 rounded bg-slate-50/80 border border-slate-100 mb-5">
+                {/* SUGGESTED PRICING box */}
+                <div className="p-3 sm:p-3.5 rounded bg-slate-50/80 border border-slate-100 mb-4 sm:mb-5">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                     SUGGESTED PRICING
                   </div>
@@ -218,7 +212,7 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
                 </div>
               </div>
 
-              {/* Action Buttons: Edit, Pricing, Disable/Enable (Screenshot 5) */}
+              {/* Action Buttons */}
               <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                 <Button
                   onClick={() => openEditModal(service)}
@@ -242,7 +236,7 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
                   onClick={() => handleToggleActive(service.id, service.isActive)}
                   variant="secondary"
                   size="sm"
-                  className="px-3"
+                  className="px-2.5 sm:px-3"
                   title={service.isActive ? 'Disable Service' : 'Enable Service'}
                 >
                   {service.isActive ? (
@@ -267,8 +261,8 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
         title={editingService ? `Edit Service: ${editingService.name}` : 'Add New Regulatory Service'}
         size="md"
       >
-        <form onSubmit={handleSaveService} className="space-y-4 text-xs">
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSaveService} className="space-y-3 sm:space-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Service Name *</label>
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
@@ -294,7 +288,7 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
             <Textarea value={detailedScope} onChange={(e) => setDetailedScope(e.target.value)} rows={3} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Min Price (INR)</label>
               <Input

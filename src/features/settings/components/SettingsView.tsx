@@ -120,6 +120,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
         setIsNewUserOpen(false);
         setNewUserName('');
         setNewUserEmail('');
+        setNewUserPassword('Password123!');
         setFeedback(`User ${json.data.fullName} created successfully.`);
       }
     } catch (err) {
@@ -130,81 +131,89 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
   };
 
   return (
-    <div className="space-y-8 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">System & Security Settings</h1>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Configure enterprise parameters, multi-currency, encrypted SMTP, and user permissions.
-        </p>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">System & Company Settings</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Configure company branding, encrypted email credentials, regional taxes, and team permissions.
+          </p>
+        </div>
       </div>
 
       {feedback && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded font-medium flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{feedback}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-emerald-600 font-bold">
+          <button onClick={() => setFeedback(null)} className="text-emerald-600 font-bold p-1 cursor-pointer">
             ✕
           </button>
         </div>
       )}
 
-      <form onSubmit={handleSaveSettings} className="space-y-6">
-        {/* Company Profile Card */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-card space-y-4">
+      {/* Main Settings Form */}
+      <form onSubmit={handleSaveSettings} className="space-y-4 sm:space-y-6">
+        {/* Company Branding & Details */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <Building2 className="w-4 h-4 text-[#0040e0]" />
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Company Profile</h2>
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+              Company Branding & Regulatory Identity
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Company Legal Name</label>
               <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} required />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Tagline</label>
+              <label className="block font-semibold text-slate-700 mb-1">Tagline / Mission</label>
               <Input value={brandTagline} onChange={(e) => setBrandTagline(e.target.value)} />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Official Invoicing Email</label>
+              <label className="block font-semibold text-slate-700 mb-1">Contact Email</label>
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Corporate Phone</label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <label className="block font-semibold text-slate-700 mb-1">Official Phone</label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-700 mb-1">Registered Address</label>
-              <Textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={2} />
+              <label className="block font-semibold text-slate-700 mb-1">Registered Address (Printed on Proformas)</label>
+              <Input value={address} onChange={(e) => setAddress(e.target.value)} required />
             </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">GSTIN / Tax Registration</label>
-              <Input value={taxId} onChange={(e) => setTaxId(e.target.value)} />
+            <div className="sm:col-span-2">
+              <label className="block font-semibold text-slate-700 mb-1">GSTIN / Tax Identification</label>
+              <Input value={taxId} onChange={(e) => setTaxId(e.target.value)} required />
             </div>
           </div>
         </div>
 
-        {/* Commercial & Financial Settings */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-card space-y-4">
+        {/* Currency & Tax Localization */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-            <Shield className="w-4 h-4 text-[#0040e0]" />
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Financial & Timezone</h2>
+            <Clock className="w-4 h-4 text-[#0040e0]" />
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+              Financial & Regional Configuration
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs">
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Base Currency</label>
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="h-9 w-full rounded border border-slate-200 bg-white px-3 text-xs text-slate-900"
+                className="h-9 w-full rounded border border-slate-200 bg-white px-2.5 text-xs text-slate-900"
               >
                 <option value="INR">INR - Indian Rupee (₹)</option>
                 <option value="USD">USD - US Dollar ($)</option>
@@ -231,15 +240,15 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
         </div>
 
         {/* Encrypted SMTP Configuration */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-card space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-[#0040e0]" />
               <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                 Encrypted SMTP Credentials
               </h2>
             </div>
-            <Badge variant={settings.isSmtpConfigured ? 'accepted' : 'actionNeeded'}>
+            <Badge variant={settings.isSmtpConfigured ? 'accepted' : 'actionNeeded'} className="self-start sm:self-auto">
               {settings.isSmtpConfigured ? 'Configured & Encrypted' : 'Mock Delivery Mode'}
             </Badge>
           </div>
@@ -248,7 +257,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
             When configured, SMTP credentials are encrypted with AES-256-GCM before saving to PostgreSQL. If left empty, the CRM utilizes high-fidelity simulated email delivery with full event logs.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
             <div>
               <label className="block font-semibold text-slate-700 mb-1">SMTP Host</label>
               <Input
@@ -291,7 +300,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
 
         {currentUserRole === 'ADMIN' && (
           <div className="flex justify-end">
-            <Button type="submit" variant="primary" size="md" isLoading={isSaving}>
+            <Button type="submit" variant="primary" size="md" isLoading={isSaving} className="w-full sm:w-auto">
               Save Settings
             </Button>
           </div>
@@ -299,8 +308,8 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
       </form>
 
       {/* User Management & RBAC */}
-      <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-card space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+      <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-[#0040e0]" />
             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
@@ -309,14 +318,14 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
           </div>
 
           {currentUserRole === 'ADMIN' && (
-            <Button onClick={() => setIsNewUserOpen(true)} variant="secondary" size="sm">
+            <Button onClick={() => setIsNewUserOpen(true)} variant="secondary" size="sm" className="w-full sm:w-auto">
               <Plus className="w-3.5 h-3.5 mr-1" /> Add Team Member
             </Button>
           )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto touch-scroll">
+          <table className="w-full text-left text-xs whitespace-nowrap min-w-[500px]">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 <th className="py-2.5 px-3">Name</th>
@@ -345,7 +354,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
 
       {/* New User Modal */}
       <Modal isOpen={isNewUserOpen} onClose={() => setIsNewUserOpen(false)} title="Add Team Member" size="sm">
-        <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
+        <form onSubmit={handleCreateUser} className="space-y-3 sm:space-y-4 text-xs">
           <div>
             <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
             <Input value={newUserName} onChange={(e) => setNewUserName(e.target.value)} required />
@@ -361,7 +370,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
             <select
               value={newUserRole}
               onChange={(e) => setNewUserRole(e.target.value as any)}
-              className="h-9 w-full rounded border border-slate-200 bg-white px-3 text-xs text-slate-900"
+              className="h-9 w-full rounded border border-slate-200 bg-white px-2.5 text-xs text-slate-900"
             >
               <option value="SALES">SALES - Sales Representative</option>
               <option value="ADMIN">ADMIN - System Administrator</option>
@@ -378,7 +387,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
             <Button type="button" variant="secondary" size="sm" onClick={() => setIsNewUserOpen(false)}>
               Cancel
             </Button>

@@ -24,18 +24,42 @@
     --input: #e2e8f0;
     --ring: #1A73E8;
     --radius: 4px;
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
   }
 
   * {
     border-color: #e2e8f0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  body {
+  html, body {
     background-color: #fbf9fa;
     color: #041627;
     margin: 0;
     padding: 0;
+    min-height: 100%;
+    min-height: 100dvh;
+    touch-action: manipulation;
+  }
+
+  /* Prevent font scaling issues on iOS Safari */
+  body {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Form inputs mobile styling */
+  input, select, textarea {
+    font-size: 16px; /* Prevents auto-zoom in iOS Safari on focus */
+  }
+
+  @media (min-width: 640px) {
+    input, select, textarea {
+      font-size: 0.875rem; /* 14px on tablets & desktops */
+    }
   }
 }
 
@@ -68,10 +92,39 @@ th, td {
   background: #94a3b8;
 }
 
+/* Utility to hide scrollbars while keeping smooth touch scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Safe Area Inset Utilities */
+.pt-safe {
+  padding-top: max(1rem, env(safe-area-inset-top, 0px));
+}
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+.pl-safe {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
 /* Focus styles */
 input:focus, select:focus, textarea:focus, button:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px #1A73E8;
+}
+
+/* Smooth Touch Scrolling */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Animations */
@@ -80,6 +133,38 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.15s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Mobile Landscape Optimizations (height < 500px) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .landscape-compact-header {
+    height: 48px !important;
+  }
+  .landscape-compact-padding {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  .landscape-modal-body {
+    max-height: calc(100dvh - 3rem) !important;
+  }
 }
