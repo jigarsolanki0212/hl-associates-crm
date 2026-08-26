@@ -118,6 +118,7 @@ export async function POST(request: Request) {
       data: {
         clientNumber,
         companyName: body.companyName.trim(),
+        logoUrl: body.logoUrl?.trim() || null,
         contactName: body.contactName.trim(),
         contactTitle: body.contactTitle || null,
         email: body.email.toLowerCase().trim(),

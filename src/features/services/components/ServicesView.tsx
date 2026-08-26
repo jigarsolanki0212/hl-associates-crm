@@ -26,6 +26,7 @@ interface ServiceItem {
   category: string;
   description: string;
   detailedScope?: string | null;
+  logoUrl?: string | null;
   suggestedPriceMin?: number | null;
   suggestedPriceMax?: number | null;
   pricingType: string;
@@ -48,6 +49,7 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
   // Form states
   const [name, setName] = React.useState('');
   const [code, setCode] = React.useState('');
+  const [logoUrl, setLogoUrl] = React.useState('');
   const [category, setCategory] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [detailedScope, setDetailedScope] = React.useState('');
@@ -83,6 +85,7 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
           body: JSON.stringify({
             name,
             code,
+            logoUrl: logoUrl.trim() || null,
             category,
             description,
             detailedScope,
@@ -102,6 +105,7 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
           body: JSON.stringify({
             name,
             code,
+            logoUrl: logoUrl.trim() || null,
             category,
             description,
             detailedScope,
@@ -116,6 +120,14 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
         if (json.success) {
           setServices((prev) => [json.data, ...prev]);
           setIsAddOpen(false);
+          setName('');
+          setCode('');
+          setLogoUrl('');
+          setCategory('');
+          setDescription('');
+          setDetailedScope('');
+          setPriceMin('');
+          setPriceMax('');
         }
       }
     } catch (err) {
@@ -129,6 +141,7 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
     setEditingService(service);
     setName(service.name);
     setCode(service.code);
+    setLogoUrl(service.logoUrl || '');
     setCategory(service.category);
     setDescription(service.description);
     setDetailedScope(service.detailedScope || '');
@@ -183,8 +196,19 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
                 {/* Header Icon + Code + Active Switch */}
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
-                      {getCategoryIcon(service.category)}
+                    <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden p-1">
+                      {service.logoUrl ? (
+                        <img
+                          src={service.logoUrl}
+                          alt={service.name}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        getCategoryIcon(service.category)
+                      )}
                     </div>
                     <div>
                       <h3 className="font-bold text-sm text-slate-900 leading-tight">{service.name}</h3>
@@ -273,9 +297,20 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
             </div>
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Category</label>
-            <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. QMS Systems" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Category</label>
+              <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. QMS Systems" />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Service Logo Image URL <span className="text-slate-400 font-normal">(Optional)</span></label>
+              <Input
+                type="url"
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="https://example.com/icon.png"
+              />
+            </div>
           </div>
 
           <div>

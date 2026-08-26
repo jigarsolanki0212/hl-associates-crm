@@ -32,6 +32,7 @@ export async function POST(request: Request) {
       data: {
         code: body.code.toUpperCase().trim(),
         name: body.name.trim(),
+        logoUrl: body.logoUrl?.trim() || null,
         category: body.category || 'General Compliance',
         description: body.description || '',
         detailedScope: body.detailedScope || '',

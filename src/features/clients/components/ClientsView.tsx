@@ -26,6 +26,7 @@ interface ClientItem {
   id: string;
   clientNumber: string;
   companyName: string;
+  logoUrl?: string | null;
   contactName: string;
   email: string;
   phone?: string | null;
@@ -70,6 +71,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
   // New Client Modal
   const [isNewClientOpen, setIsNewClientOpen] = React.useState(false);
   const [newCompany, setNewCompany] = React.useState('');
+  const [newLogoUrl, setNewLogoUrl] = React.useState('');
   const [newContact, setNewContact] = React.useState('');
   const [newEmail, setNewEmail] = React.useState('');
   const [newPhone, setNewPhone] = React.useState('');
@@ -116,6 +118,7 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           companyName: newCompany,
+          logoUrl: newLogoUrl.trim() || undefined,
           contactName: newContact,
           email: newEmail,
           phone: newPhone,
@@ -126,24 +129,27 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
       if (json.success) {
         setIsNewClientOpen(false);
         setNewCompany('');
+        setNewLogoUrl('');
         setNewContact('');
         setNewEmail('');
         setNewPhone('');
+        setNewAssigned('');
         setToast({
           type: 'success',
-          title: 'Client Created',
-          description: `${newCompany} profile is now active.`,
+          title: 'Client Profile Activated',
+          description: `${newCompany} successfully added to database.`,
         });
         fetchClients();
       } else {
         setToast({
           type: 'error',
-          title: 'Failed to Create Client',
-          description: json.error?.message || 'Error creating client profile.',
+          title: 'Creation Failed',
+          description: json.error?.message || 'Unable to register client profile',
         });
       }
     } catch (err) {
       console.error('Create client error:', err);
+      setToast({ type: 'error', title: 'Network Error', description: 'Failed to create client' });
     } finally {
       setIsSubmitting(false);
     }
@@ -335,9 +341,25 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
                   return (
                     <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="py-3 px-4">
-                        <Link href={`/clients/${c.id}`} className="hover:underline">
-                          <div className="font-bold text-slate-900">{c.companyName}</div>
-                          <div className="text-[11px] text-slate-500 font-medium">{c.contactName}</div>
+                        <Link href={`/clients/${c.id}`} className="hover:underline flex items-center gap-2.5">
+                          {c.logoUrl ? (
+                            <img
+                              src={c.logoUrl}
+                              alt={c.companyName}
+                              className="w-8 h-8 rounded-lg object-contain bg-white border border-slate-200 shrink-0 p-0.5"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg bg-[#0040e0]/10 text-[#0040e0] font-bold text-xs flex items-center justify-center shrink-0">
+                              {c.companyName.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-bold text-slate-900">{c.companyName}</div>
+                            <div className="text-[11px] text-slate-500 font-medium">{c.contactName}</div>
+                          </div>
                         </Link>
                       </td>
 
@@ -431,7 +453,17 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
         <form onSubmit={handleCreateClient} className="space-y-3 sm:space-y-4 text-xs">
           <div>
             <label className="block font-semibold text-slate-700 mb-1">Company Name *</label>
-            <Input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} required />
+            <Input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} required placeholder="e.g. Maven Medical Ltd" />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Company Logo Image URL <span className="text-slate-400 font-normal">(Optional)</span></label>
+            <Input
+              type="url"
+              value={newLogoUrl}
+              onChange={(e) => setNewLogoUrl(e.target.value)}
+              placeholder="https://example.com/logo.png"
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

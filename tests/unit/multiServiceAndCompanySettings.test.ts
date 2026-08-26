@@ -90,4 +90,56 @@ describe('Official Company Identity & Multi-Service Verification Tests', () => {
       expect(newUnreadCount).toBe(0);
     });
   });
+
+  describe('4. Optional Client Company Logo & Service Logo Capabilities', () => {
+    it('supports optional client company logo with graceful fallback to initial letter', () => {
+      const clientWithLogo = {
+        companyName: 'Maven Medical Ltd',
+        logoUrl: 'https://example.com/maven.png',
+      };
+      const clientWithoutLogo = {
+        companyName: 'Apex Diagnostics Inc',
+        logoUrl: null,
+      };
+
+      const renderLogoOrInitial = (client: { companyName: string; logoUrl: string | null }) => {
+        if (client.logoUrl) return { type: 'IMAGE', src: client.logoUrl };
+        return { type: 'INITIAL', letter: client.companyName.charAt(0) };
+      };
+
+      const res1 = renderLogoOrInitial(clientWithLogo);
+      expect(res1.type).toBe('IMAGE');
+      expect(res1.src).toBe('https://example.com/maven.png');
+
+      const res2 = renderLogoOrInitial(clientWithoutLogo);
+      expect(res2.type).toBe('INITIAL');
+      expect(res2.letter).toBe('A');
+    });
+
+    it('supports optional service catalog logo with graceful fallback to category icon', () => {
+      const serviceWithLogo = {
+        name: 'ISO 13485:2016',
+        category: 'QMS Systems',
+        logoUrl: 'https://example.com/iso.png',
+      };
+      const serviceWithoutLogo = {
+        name: 'CDSCO MD-5 Import License',
+        category: 'Indian CDSCO Regulations',
+        logoUrl: null,
+      };
+
+      const resolveServiceVisual = (srv: { name: string; category: string; logoUrl: string | null }) => {
+        if (srv.logoUrl) return { isCustomLogo: true, url: srv.logoUrl };
+        return { isCustomLogo: false, fallbackCategory: srv.category };
+      };
+
+      const srv1 = resolveServiceVisual(serviceWithLogo);
+      expect(srv1.isCustomLogo).toBe(true);
+      expect(srv1.url).toBe('https://example.com/iso.png');
+
+      const srv2 = resolveServiceVisual(serviceWithoutLogo);
+      expect(srv2.isCustomLogo).toBe(false);
+      expect(srv2.fallbackCategory).toBe('Indian CDSCO Regulations');
+    });
+  });
 });

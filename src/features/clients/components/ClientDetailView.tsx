@@ -55,6 +55,7 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
   // Edit Client Modal State
   const [isEditClientOpen, setIsEditClientOpen] = React.useState(false);
   const [editCompany, setEditCompany] = React.useState(client.companyName || '');
+  const [editLogoUrl, setEditLogoUrl] = React.useState(client.logoUrl || '');
   const [editContact, setEditContact] = React.useState(client.contactName || '');
   const [editTitle, setEditTitle] = React.useState(client.contactTitle || '');
   const [editEmail, setEditEmail] = React.useState(client.email || '');
@@ -149,12 +150,6 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
     }
   };
 
-  // Compose Email Modal
-  const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
-  const [emailSubject, setEmailSubject] = React.useState(`Regulatory Update for ${client.companyName}`);
-  const [emailBody, setEmailBody] = React.useState(`Dear ${client.contactName},\n\nWe are writing to provide an update regarding your ongoing regulatory compliance services with HL Associates.\n\nBest regards,\nHL Associates Compliance Operations`);
-  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
-
   const handleUpdateClient = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingClient(true);
@@ -164,6 +159,7 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           companyName: editCompany.trim(),
+          logoUrl: editLogoUrl.trim() || null,
           contactName: editContact.trim(),
           contactTitle: editTitle.trim() || null,
           email: editEmail.trim().toLowerCase(),
@@ -198,6 +194,12 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
       setIsSavingClient(false);
     }
   };
+
+  // Compose Email Modal
+  const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
+  const [emailSubject, setEmailSubject] = React.useState(`Regulatory Update for ${client.companyName}`);
+  const [emailBody, setEmailBody] = React.useState(`Dear ${client.contactName},\n\nWe are writing to provide an update regarding your ongoing regulatory compliance services with HL Associates.\n\nBest regards,\nHL Associates Compliance Operations`);
+  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
 
   const handleRenewService = async () => {
     if (!renewingServiceId) return;
@@ -303,17 +305,33 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
 
       {/* Header */}
       <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              {currentClient.companyName}
-            </h1>
-            <Badge variant="active">{currentClient.status}</Badge>
-          </div>
-          <div className="text-xs text-slate-500 font-medium mt-1">
-            Client ID: <span className="font-semibold text-slate-700">{currentClient.clientNumber}</span> •
-            Primary Contact: <span className="font-semibold text-slate-700">{currentClient.contactName}</span>
-            {currentClient.contactTitle && <span className="text-slate-400"> ({currentClient.contactTitle})</span>}
+        <div className="flex items-center gap-3.5">
+          {currentClient.logoUrl ? (
+            <img
+              src={currentClient.logoUrl}
+              alt={currentClient.companyName}
+              className="w-12 h-12 rounded-xl object-contain bg-white border border-slate-200 p-1 shrink-0 shadow-xs"
+              onError={(e) => {
+                (e.currentTarget as HTMLElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-xl bg-[#0040e0]/10 text-[#0040e0] font-extrabold text-lg flex items-center justify-center shrink-0 border border-[#0040e0]/20">
+              {currentClient.companyName.charAt(0)}
+            </div>
+          )}
+          <div>
+            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                {currentClient.companyName}
+              </h1>
+              <Badge variant="active">{currentClient.status}</Badge>
+            </div>
+            <div className="text-xs text-slate-500 font-medium mt-1">
+              Client ID: <span className="font-semibold text-slate-700">{currentClient.clientNumber}</span> •
+              Primary Contact: <span className="font-semibold text-slate-700">{currentClient.contactName}</span>
+              {currentClient.contactTitle && <span className="text-slate-400"> ({currentClient.contactTitle})</span>}
+            </div>
           </div>
         </div>
 
@@ -337,6 +355,7 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
             className="flex-1 sm:flex-initial"
             onClick={() => {
               setEditCompany(currentClient.companyName || '');
+              setEditLogoUrl(currentClient.logoUrl || '');
               setEditContact(currentClient.contactName || '');
               setEditTitle(currentClient.contactTitle || '');
               setEditEmail(currentClient.email || '');
@@ -832,6 +851,16 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
                 <option value="INACTIVE">INACTIVE</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Company Logo Image URL <span className="text-slate-400 font-normal">(Optional)</span></label>
+            <Input
+              type="url"
+              value={editLogoUrl}
+              onChange={(e) => setEditLogoUrl(e.target.value)}
+              placeholder="https://example.com/logo.png"
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
