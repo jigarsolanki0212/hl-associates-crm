@@ -82,8 +82,8 @@ export function Sidebar({
           </div>
           {(!isCollapsed || isMobileDrawer) && (
             <div className="flex flex-col truncate">
-              <span className="font-bold text-slate-900 text-sm tracking-tight leading-tight">Regulato CRM</span>
-              <span className="text-[11px] text-slate-500 font-medium leading-tight">Compliance Suite</span>
+              <span className="font-bold text-slate-900 text-sm tracking-tight leading-tight">HL Associates CRM</span>
+              <span className="text-[11px] text-slate-500 font-medium leading-tight">Regulatory Compliance Suite</span>
             </div>
           )}
         </Link>

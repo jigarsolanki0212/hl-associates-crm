@@ -54,7 +54,7 @@ export async function POST(request: Request) {
             </p>
           </div>
           <div class="footer">
-            HL Associates • Suite 400, Regulatory Tower, BKC, Mumbai 400051
+            HL Associates • 602, 603 & 606 Rashmi Growth Hub, Odhav to Vastral Road, S.P. Ring Road, Odhav, Ahmedabad, Gujarat 382415
           </div>
         </div>
       </body>

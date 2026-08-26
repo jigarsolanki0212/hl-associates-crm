@@ -43,8 +43,8 @@ export function Header({
           <div className="w-7 h-7 rounded bg-[#0040e0] flex items-center justify-center text-white font-bold text-xs shadow-xs">
             HL
           </div>
-          <span className="font-bold text-xs text-slate-900 truncate max-w-[120px] sm:max-w-none">
-            Regulato CRM
+          <span className="font-bold text-xs text-slate-900 truncate max-w-[140px] sm:max-w-none">
+            HL Associates CRM
           </span>
         </Link>
       </div>
