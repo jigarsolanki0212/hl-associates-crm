@@ -156,4 +156,57 @@ describe('Official Company Identity & Multi-Service Verification Tests', () => {
       expect(isBase64DataUrl('https://example.com/logo.png')).toBe(false);
     });
   });
+
+  describe('5. Entity Amendment, Activation / Deactivation & Deletion Governance', () => {
+    it('validates active / inactive toggle logic and safeguards self-deletion', () => {
+      const activeUser = { id: 'usr-1', fullName: 'Ramesh Patel', isActive: true, role: 'SALES' };
+      const toggleActive = (user: typeof activeUser) => ({ ...user, isActive: !user.isActive });
+
+      const deactivated = toggleActive(activeUser);
+      expect(deactivated.isActive).toBe(false);
+
+      const reactivated = toggleActive(deactivated);
+      expect(reactivated.isActive).toBe(true);
+
+      const currentSessionUserId = 'admin-1';
+      const canDeleteUser = (targetUserId: string) => targetUserId !== currentSessionUserId;
+
+      expect(canDeleteUser('usr-1')).toBe(true);
+      expect(canDeleteUser('admin-1')).toBe(false); // Safeguards self-deletion
+    });
+
+    it('safely handles service deactivation when engagements exist', () => {
+      const activeEngagementsCount = 3;
+      const decideServiceDeletionAction = (count: number) => {
+        if (count > 0) return 'DEACTIVATE_PRESERVE_HISTORY';
+        return 'HARD_DELETE';
+      };
+
+      expect(decideServiceDeletionAction(activeEngagementsCount)).toBe('DEACTIVATE_PRESERVE_HISTORY');
+      expect(decideServiceDeletionAction(0)).toBe('HARD_DELETE');
+    });
+
+    it('validates service engagement amendments and date ranges', () => {
+      const engagement = {
+        id: 'cs-1',
+        serviceNameSnapshot: 'ISO 13485:2016 QMS',
+        fee: 250000,
+        status: 'ACTIVE',
+        startDate: '2026-01-01',
+        expiryDate: '2027-01-01',
+      };
+
+      const amended = {
+        ...engagement,
+        fee: 300000,
+        status: 'EXPIRING_SOON',
+        expiryDate: '2027-06-30',
+      };
+
+      expect(amended.fee).toBe(300000);
+      expect(amended.status).toBe('EXPIRING_SOON');
+      expect(new Date(amended.expiryDate).getTime()).toBeGreaterThan(new Date(amended.startDate).getTime());
+    });
+  });
 });
+

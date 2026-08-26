@@ -26,6 +26,8 @@ import {
   Send,
   ShieldCheck,
   CheckCircle2,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 
 import { Toast, ToastMessage } from '@/components/ui/Toast';
@@ -86,6 +88,17 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
   const [renewFee, setRenewFee] = React.useState(200000);
   const [isRenewing, setIsRenewing] = React.useState(false);
   const [toast, setToast] = React.useState<ToastMessage | null>(null);
+
+  // Edit / Amend Engagement Modal
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editingEngagement, setEditingEngagement] = React.useState<any | null>(null);
+  const [editEngagementName, setEditEngagementName] = React.useState('');
+  const [editEngagementScope, setEditEngagementScope] = React.useState('');
+  const [editEngagementFee, setEditEngagementFee] = React.useState<number | ''>('');
+  const [editEngagementStartDate, setEditEngagementStartDate] = React.useState('');
+  const [editEngagementExpiryDate, setEditEngagementExpiryDate] = React.useState('');
+  const [editEngagementStatus, setEditEngagementStatus] = React.useState('ACTIVE');
+  const [isSavingEngagement, setIsSavingEngagement] = React.useState(false);
 
   // Auto-fill price & duration when selected service changes
   const handleServiceChange = (id: string) => {
@@ -245,6 +258,67 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
       }
     } catch (err) {
       console.error('Reminder dispatch error:', err);
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleOpenEditEngagement = (s: any) => {
+    setEditingEngagement(s);
+    setEditEngagementName(s.serviceNameSnapshot || '');
+    setEditEngagementScope(s.scopeSnapshot || '');
+    setEditEngagementFee(s.fee !== undefined ? Number(s.fee) : '');
+    setEditEngagementStartDate(s.startDate ? new Date(s.startDate).toISOString().slice(0, 10) : '');
+    setEditEngagementExpiryDate(s.expiryDate ? new Date(s.expiryDate).toISOString().slice(0, 10) : '');
+    setEditEngagementStatus(s.status || 'ACTIVE');
+  };
+
+  const handleUpdateEngagement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEngagement) return;
+    setIsSavingEngagement(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const payload: any = {
+        serviceNameSnapshot: editEngagementName.trim(),
+        scopeSnapshot: editEngagementScope.trim() || null,
+        status: editEngagementStatus,
+      };
+      if (editEngagementFee !== '') payload.fee = Number(editEngagementFee);
+      if (editEngagementStartDate) payload.startDate = new Date(editEngagementStartDate);
+      if (editEngagementExpiryDate) payload.expiryDate = new Date(editEngagementExpiryDate);
+
+      const res = await fetch(`/api/client-services/${editingEngagement.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setCurrentClient((prev: any) => ({
+          ...prev,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          services: (prev.services || []).map((s: any) => (s.id === editingEngagement.id ? { ...s, ...json.data } : s)),
+        }));
+        setEditingEngagement(null);
+        setToast({
+          type: 'success',
+          title: 'Engagement Amended',
+          description: 'Regulatory service scope and timeline updated.',
+        });
+        router.refresh();
+      } else {
+        setToast({
+          type: 'error',
+          title: 'Update Failed',
+          description: json.error?.message || 'Could not update engagement.',
+        });
+      }
+    } catch (err) {
+      console.error('Update engagement error:', err);
+    } finally {
+      setIsSavingEngagement(false);
     }
   };
 
@@ -564,17 +638,28 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
                         <Badge variant="active">{s.status || 'ACTIVE'}</Badge>
                       </td>
                       <td className="py-3.5 px-4 text-right">
-                        <Button
-                          onClick={() => {
-                            setRenewingServiceId(s.id);
-                            setRenewFee(Number(s.fee) || 200000);
-                          }}
-                          variant="secondary"
-                          size="sm"
-                          className="text-xs"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5 mr-1" /> Renew
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            onClick={() => {
+                              setRenewingServiceId(s.id);
+                              setRenewFee(Number(s.fee) || 200000);
+                            }}
+                            variant="secondary"
+                            size="sm"
+                            className="text-xs"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 mr-1" /> Renew
+                          </Button>
+                          <Button
+                            onClick={() => handleOpenEditEngagement(s)}
+                            variant="secondary"
+                            size="sm"
+                            className="text-xs px-2 text-slate-600 hover:text-slate-900"
+                            title="Edit Engagement Details"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1055,6 +1140,101 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
               className="bg-[#0040e0] text-white"
             >
               <Plus className="w-3.5 h-3.5 mr-1" /> Activate Engagement
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit / Amend Service Engagement Modal */}
+      <Modal
+        isOpen={!!editingEngagement}
+        onClose={() => setEditingEngagement(null)}
+        title={editingEngagement ? `Amend Engagement: ${editingEngagement.serviceNameSnapshot}` : 'Amend Engagement'}
+        size="md"
+      >
+        <form onSubmit={handleUpdateEngagement} className="space-y-3 sm:space-y-4 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Service Title *</label>
+            <Input
+              value={editEngagementName}
+              onChange={(e) => setEditEngagementName(e.target.value)}
+              placeholder="e.g. CDSCO Medical Device Registration"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Commercial Fee (₹) *</label>
+              <Input
+                type="number"
+                value={editEngagementFee}
+                onChange={(e) => setEditEngagementFee(e.target.value ? Number(e.target.value) : '')}
+                required
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Engagement Status *</label>
+              <select
+                value={editEngagementStatus}
+                onChange={(e) => setEditEngagementStatus(e.target.value)}
+                className="flex h-9 w-full rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs text-slate-900 focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20"
+              >
+                <option value="ACTIVE">ACTIVE - Compliant & Operating</option>
+                <option value="EXPIRING_SOON">EXPIRING_SOON - In Renewal Window</option>
+                <option value="LAPSED">LAPSED - Grace Period</option>
+                <option value="CANCELLED">CANCELLED - Terminated</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Start Date</label>
+              <Input
+                type="date"
+                value={editEngagementStartDate}
+                onChange={(e) => setEditEngagementStartDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Expiry Date</label>
+              <Input
+                type="date"
+                value={editEngagementExpiryDate}
+                onChange={(e) => setEditEngagementExpiryDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Regulatory Scope Deliverables</label>
+            <Textarea
+              value={editEngagementScope}
+              onChange={(e) => setEditEngagementScope(e.target.value)}
+              placeholder="e.g. Dossier preparation, Class B/C devices, testing certificates..."
+              rows={3}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setEditingEngagement(null)}
+              disabled={isSavingEngagement}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isSavingEngagement}
+              className="bg-[#0040e0] text-white"
+            >
+              Save Changes
             </Button>
           </div>
         </form>

@@ -18,6 +18,7 @@ import {
   Award,
   Sliders,
   FileCheck2,
+  Trash2,
 } from 'lucide-react';
 
 interface ServiceItem {
@@ -56,6 +57,29 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
   const [detailedScope, setDetailedScope] = React.useState('');
   const [priceMin, setPriceMin] = React.useState<number | ''>('');
   const [priceMax, setPriceMax] = React.useState<number | ''>('');
+  const [deletingService, setDeletingService] = React.useState<ServiceItem | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const handleDeleteService = async (id: string) => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/services/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        if (json.data?.deactivated) {
+          // If deactivated due to historical references, update status in state
+          setServices((prev) => prev.map((s) => (s.id === id ? { ...s, isActive: false } : s)));
+        } else {
+          setServices((prev) => prev.filter((s) => s.id !== id));
+        }
+        setDeletingService(null);
+      }
+    } catch (err) {
+      console.error('Delete service error:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
     try {
@@ -286,59 +310,84 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
         title={editingService ? `Edit Service: ${editingService.name}` : 'Add New Regulatory Service'}
         size="md"
       >
-        <form onSubmit={handleSaveService} className="space-y-3 sm:space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Service Name *</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} required />
-            </div>
+        <form onSubmit={handleSaveService} className="space-y-3.5 sm:space-y-4 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Service Title *</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. CDSCO Medical Device Registration"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Service Code *</label>
-              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="SRV-XXXX" required />
-            </div>
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Category</label>
-            <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. QMS Systems" />
-          </div>
-
-          <ImageUpload
-            value={logoUrl}
-            onChange={setLogoUrl}
-            label="Service Logo / Compliance Seal"
-            fallbackText={name || 'Service'}
-            shape="circle"
-            size="md"
-          />
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Summary Description</label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Detailed Technical Scope</label>
-            <Textarea value={detailedScope} onChange={(e) => setDetailedScope(e.target.value)} rows={3} />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Min Price (INR)</label>
               <Input
-                type="number"
-                value={priceMin}
-                onChange={(e) => setPriceMin(e.target.value === '' ? '' : Number(e.target.value))}
-                placeholder="150000"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="e.g. CDSCO-MD-01"
+                required
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Max Price (INR)</label>
+              <label className="block font-semibold text-slate-700 mb-1">Category *</label>
+              <Input
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g. Medical Devices"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Service Brand / Authority Logo Upload */}
+          <ImageUpload
+            label="Regulatory Authority / Service Icon (Optional)"
+            value={logoUrl}
+            onChange={(url: string) => setLogoUrl(url)}
+            fallbackText={name || 'Service'}
+            shape="circle"
+          />
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Commercial Description</label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Summary of regulatory coverage..."
+              rows={2}
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Standard Scope Deliverables</label>
+            <Textarea
+              value={detailedScope}
+              onChange={(e) => setDetailedScope(e.target.value)}
+              placeholder="Detailed dossiers, lab testing, technical file reviews..."
+              rows={3}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Min Price (₹)</label>
+              <Input
+                type="number"
+                value={priceMin}
+                onChange={(e) => setPriceMin(e.target.value ? Number(e.target.value) : '')}
+                placeholder="e.g. 150000"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Max Price (₹)</label>
               <Input
                 type="number"
                 value={priceMax}
-                onChange={(e) => setPriceMax(e.target.value === '' ? '' : Number(e.target.value))}
-                placeholder="250000"
+                onChange={(e) => setPriceMax(e.target.value ? Number(e.target.value) : '')}
+                placeholder="e.g. 350000"
               />
             </div>
           </div>
@@ -356,7 +405,7 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
               Cancel
             </Button>
             <Button type="submit" variant="primary" size="sm" isLoading={isSubmitting}>
-              Save Service
+              {editingService ? 'Save Changes' : 'Create Service'}
             </Button>
           </div>
         </form>
