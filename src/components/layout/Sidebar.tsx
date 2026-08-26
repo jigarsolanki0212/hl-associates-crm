@@ -18,7 +18,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  PlusCircle,
+  Plus,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
@@ -115,10 +115,10 @@ export function Sidebar({
               if (isMobileDrawer && onCloseMobileDrawer) onCloseMobileDrawer();
               onOpenNewInquiry();
             }}
-            className="w-full h-10 sm:h-9 bg-brand-navy hover:bg-brand-lightNavy active:scale-[0.99] text-white rounded text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+            className="w-full h-10 sm:h-9 bg-[#0040e0] hover:bg-[#0035b8] active:scale-[0.99] text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>+ New Inquiry</span>
+            <Plus className="w-4 h-4" />
+            <span>New Inquiry</span>
           </button>
         </div>
       )}
