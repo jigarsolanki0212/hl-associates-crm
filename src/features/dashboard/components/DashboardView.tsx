@@ -11,6 +11,12 @@ import { formatDateZoned, formatFriendlyDate } from '@/lib/dates/timezone';
 import { formatCurrency } from '@/lib/utils/currency';
 import { exportToExcel } from '@/lib/utils/excelExport';
 import {
+  RevenueTrendChart,
+  SourceDonutChart,
+  ServiceDemandBarChart,
+  FunnelBarChart,
+} from './DashboardCharts';
+import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
@@ -54,7 +60,6 @@ export function DashboardView({ metrics }: DashboardViewProps) {
     funnel: true,
     serviceDemand: true,
     leadSource: true,
-    renewalRisk: true,
   });
 
   const toggleChart = (key: keyof typeof visibleCharts) => {
@@ -124,13 +129,6 @@ export function DashboardView({ metrics }: DashboardViewProps) {
       setToast({ type: 'error', title: 'Export Failed', description: e?.message });
     }
   };
-
-  const maxServiceDemand = Math.max(...metrics.serviceDemand.map((s) => s.count), 1);
-  const maxMonthlyRevenue = Math.max(...metrics.monthlyRevenueTrend.map((m) => m.value), 1);
-
-  // SVG Circular Donut Math: radius = 40, circumference = 2 * PI * 40 = 251.327
-  const CIRCLE_CIRCUMFERENCE = 251.327;
-  let cumulativeOffset = 0;
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-8">
@@ -231,9 +229,9 @@ export function DashboardView({ metrics }: DashboardViewProps) {
             />
           </div>
 
-          {/* Inquiry Source & Service Demand Visual Cards */}
+          {/* Inquiry Source & Service Demand Interactive Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
-            {/* Left: Beautiful Circular Donut Chart (5 cols) */}
+            {/* Left: Recharts Interactive Donut (5 cols) */}
             <div className="lg:col-span-5 bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <div>
@@ -243,77 +241,11 @@ export function DashboardView({ metrics }: DashboardViewProps) {
                 <Badge variant="outline">Channel ROI</Badge>
               </div>
 
-              {/* Circular SVG Donut */}
-              <div className="flex flex-col items-center justify-center my-3">
-                <div className="relative w-40 h-40 sm:w-48 sm:h-48 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    {/* Background Ring */}
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="transparent"
-                      stroke="#f1f5f9"
-                      strokeWidth="10"
-                    />
-
-                    {/* Colored Segments */}
-                    {metrics.sourceStats.map((item) => {
-                      const strokeDash = (item.percent / 100) * CIRCLE_CIRCUMFERENCE;
-                      const strokeGap = CIRCLE_CIRCUMFERENCE - strokeDash;
-                      const currentOffset = cumulativeOffset;
-                      cumulativeOffset += strokeDash;
-
-                      return (
-                        <circle
-                          key={item.label}
-                          cx="50"
-                          cy="50"
-                          r="40"
-                          fill="transparent"
-                          stroke={item.color}
-                          strokeWidth="10"
-                          strokeDasharray={`${strokeDash} ${strokeGap}`}
-                          strokeDashoffset={-currentOffset}
-                          className="transition-all duration-700 hover:opacity-90"
-                        />
-                      );
-                    })}
-                  </svg>
-
-                  {/* Centered Total */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                    <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
-                      {metrics.totalInquiries}
-                    </span>
-                    <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
-                      Inquiries
-                    </span>
-                  </div>
-                </div>
-
-                {/* Clean Spaced Legend */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 mt-5 w-full">
-                  {metrics.sourceStats.map((item) => (
-                    <div
-                      key={item.label}
-                      className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-100 text-xs"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="w-3 h-3 rounded-full shrink-0 shadow-2xs"
-                          style={{ backgroundColor: item.color }}
-                        />
-                        <span className="text-slate-700 font-medium truncate">{item.label}</span>
-                      </div>
-                      <span className="font-bold text-slate-900 ml-2 shrink-0">{item.percent}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Recharts Donut Component */}
+              <SourceDonutChart data={metrics.sourceStats} totalInquiries={metrics.totalInquiries} />
             </div>
 
-            {/* Right: Modern Service Demand Bar Chart (7 cols) */}
+            {/* Right: Recharts Interactive Bar Chart (7 cols) */}
             <div className="lg:col-span-7 bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-1">
@@ -325,39 +257,11 @@ export function DashboardView({ metrics }: DashboardViewProps) {
                     {metrics.serviceDemand.reduce((sum, s) => sum + s.count, 0)} Total Services
                   </span>
                 </div>
-                <div className="border-b border-slate-100 mt-2 mb-4" />
+                <div className="border-b border-slate-100 mt-2 mb-2" />
               </div>
 
-              {/* Bar Visualization Container */}
-              <div className="h-52 flex items-end justify-between gap-2 sm:gap-4 px-2 sm:px-4">
-                {metrics.serviceDemand.map((service) => {
-                  const heightPercent = Math.round((service.count / maxServiceDemand) * 100);
-                  return (
-                    <div key={service.name} className="flex-1 flex flex-col items-center gap-2 group min-w-0">
-                      {/* Count Badge Above Bar */}
-                      <span className="text-xs font-extrabold text-slate-900 group-hover:text-[#0040e0] transition-colors">
-                        {service.count}
-                      </span>
-
-                      {/* Bar Column */}
-                      <div className="w-full flex justify-center items-end h-32 sm:h-36 bg-slate-50 rounded-t p-1">
-                        <div
-                          className="w-full max-w-[48px] bg-gradient-to-t from-[#0040e0] to-[#38bdf8] group-hover:from-[#041627] group-hover:to-[#0040e0] transition-all rounded-t flex items-start justify-center shadow-xs"
-                          style={{ height: `${Math.max(16, heightPercent)}%` }}
-                        />
-                      </div>
-
-                      {/* Service Label */}
-                      <span
-                        className="text-[10px] sm:text-[11px] font-semibold text-slate-600 group-hover:text-slate-900 text-center leading-tight truncate w-full"
-                        title={service.name}
-                      >
-                        {service.name}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              {/* Recharts Bar Component */}
+              <ServiceDemandBarChart data={metrics.serviceDemand} />
             </div>
           </div>
 
@@ -493,16 +397,16 @@ export function DashboardView({ metrics }: DashboardViewProps) {
             </div>
           </div>
 
-          {/* Graph 1: Monthly Commercial Revenue & Proposal Pipeline */}
+          {/* Graph 1: Recharts Interactive Area Chart */}
           {visibleCharts.revenueTrend && (
-            <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card space-y-4">
+            <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-emerald-600" />
                     <span>Monthly Commercial Proposal Pipeline (INR)</span>
                   </h3>
-                  <p className="text-xs text-slate-500">Gross proposal valuation and converted contract velocity.</p>
+                  <p className="text-xs text-slate-500">Interactive revenue progression and proposal growth over time.</p>
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold text-[#0040e0]">₹{metrics.totalRevenue.toLocaleString('en-IN')}</div>
@@ -510,64 +414,27 @@ export function DashboardView({ metrics }: DashboardViewProps) {
                 </div>
               </div>
 
-              {/* Monthly Bar Visualizer */}
-              <div className="h-52 flex items-end justify-between gap-3 sm:gap-6 pt-6 px-2 sm:px-6">
-                {metrics.monthlyRevenueTrend.map((m) => {
-                  const barHeight = Math.round((m.value / maxMonthlyRevenue) * 100);
-                  return (
-                    <div key={m.month} className="flex-1 flex flex-col items-center gap-2 group">
-                      <div className="text-[10px] font-bold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                        ₹{(m.value / 100000).toFixed(1)}L
-                      </div>
-                      <div className="w-full flex justify-center items-end h-36">
-                        <div
-                          className="w-full max-w-[48px] bg-gradient-to-t from-[#0040e0] to-[#3b82f6] group-hover:from-[#041627] group-hover:to-[#0040e0] rounded-t transition-all shadow-xs"
-                          style={{ height: `${Math.max(15, barHeight)}%` }}
-                        />
-                      </div>
-                      <div className="text-center">
-                        <div className="text-[11px] font-bold text-slate-900">{m.month}</div>
-                        <div className="text-[10px] text-slate-400">{m.proformas} sent</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              {/* Area Chart Component */}
+              <RevenueTrendChart data={metrics.monthlyRevenueTrend} />
             </div>
           )}
 
-          {/* Graph 2: Full Sales Conversion Funnel & Stage Breakdown */}
+          {/* Graph 2: Recharts Interactive Conversion Funnel */}
           {visibleCharts.funnel && (
-            <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card space-y-4">
-              <div className="pb-2 border-b border-slate-100">
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-[#0040e0]" />
-                  <span>Pipeline Conversion Funnel</span>
-                </h3>
-                <p className="text-xs text-slate-500">Stage-by-stage regulatory conversion efficiency.</p>
+            <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card space-y-3">
+              <div className="pb-2 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-[#0040e0]" />
+                    <span>Pipeline Conversion Funnel & Stage Drop-Off</span>
+                  </h3>
+                  <p className="text-xs text-slate-500">Stage-by-stage regulatory conversion efficiency.</p>
+                </div>
+                <Badge variant="converted">{metrics.conversionRate}% Total Conv.</Badge>
               </div>
 
-              <div className="space-y-3 pt-2">
-                {metrics.conversionFunnel.map((step, idx) => (
-                  <div key={step.stage} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-slate-800">
-                        {step.stage}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900">{step.count} entries</span>
-                        <span className="text-[11px] text-slate-500 font-mono">({step.percent}%)</span>
-                      </div>
-                    </div>
-                    <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${step.percent}%`, backgroundColor: step.color }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {/* Funnel Chart Component */}
+              <FunnelBarChart data={metrics.conversionFunnel} />
             </div>
           )}
 
@@ -579,9 +446,9 @@ export function DashboardView({ metrics }: DashboardViewProps) {
                   <ShieldCheck className="w-4 h-4 text-purple-600" />
                   <span>Regulatory Portfolio Mix</span>
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {metrics.serviceDemand.map((srv) => (
-                    <div key={srv.name} className="p-3 bg-slate-50 rounded border border-slate-200 flex items-center justify-between">
+                    <div key={srv.name} className="p-3 bg-slate-50 rounded border border-slate-200 flex items-center justify-between hover:bg-blue-50/50 transition-colors">
                       <div>
                         <div className="font-bold text-xs text-slate-900">{srv.name}</div>
                         <div className="text-[10px] text-slate-500">{srv.category}</div>
@@ -602,9 +469,9 @@ export function DashboardView({ metrics }: DashboardViewProps) {
                   <PieIcon className="w-4 h-4 text-amber-600" />
                   <span>Lead Acquisition Channel ROI</span>
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {metrics.sourceStats.map((src) => (
-                    <div key={src.label} className="p-3 bg-slate-50 rounded border border-slate-200 flex items-center justify-between">
+                    <div key={src.label} className="p-3 bg-slate-50 rounded border border-slate-200 flex items-center justify-between hover:bg-amber-50/40 transition-colors">
                       <div className="flex items-center gap-2.5">
                         <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: src.color }} />
                         <span className="font-bold text-xs text-slate-900">{src.label}</span>
