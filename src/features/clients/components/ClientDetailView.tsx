@@ -380,18 +380,20 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
 
       {/* Header */}
       <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
+        <div className="flex items-center gap-4">
           {currentClient.logoUrl ? (
-            <img
-              src={currentClient.logoUrl}
-              alt={currentClient.companyName}
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover bg-white border-2 border-white shadow-md ring-2 ring-slate-100 p-0.5 shrink-0"
-              onError={(e) => {
-                (e.currentTarget as HTMLElement).style.display = 'none';
-              }}
-            />
+            <div className="h-16 sm:h-20 min-w-[76px] max-w-[180px] px-3 py-1.5 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center shrink-0">
+              <img
+                src={currentClient.logoUrl}
+                alt={currentClient.companyName}
+                className="max-h-full max-w-full object-contain"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                }}
+              />
+            </div>
           ) : (
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-blue-500/10 to-indigo-500/20 text-[#0040e0] font-extrabold text-lg sm:text-xl flex items-center justify-center shrink-0 border-2 border-white shadow-md ring-2 ring-slate-100">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/20 text-[#0040e0] font-extrabold text-2xl flex items-center justify-center shrink-0 border border-blue-200/50 shadow-sm">
               {currentClient.companyName.charAt(0)}
             </div>
           )}

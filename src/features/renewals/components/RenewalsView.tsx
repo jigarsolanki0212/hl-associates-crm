@@ -154,10 +154,28 @@ export function RenewalsView({ initialServices }: RenewalsViewProps) {
     return (
       <tr key={s.id} className="hover:bg-slate-50 transition-colors">
         <td className="py-3 px-4">
-          <Link href={`/clients/${s.clientId}`} className="font-bold text-slate-900 hover:text-[#0040e0]">
-            {s.client.companyName}
+          <Link href={`/clients/${s.clientId}`} className="hover:underline flex items-center gap-2.5">
+            {s.client?.logoUrl ? (
+              <div className="w-8 h-8 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center shrink-0 p-0.5 ring-1 ring-slate-100 overflow-hidden">
+                <img
+                  src={s.client.logoUrl}
+                  alt={s.client.companyName}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/10 to-indigo-500/20 text-[#0040e0] font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200/50 shadow-xs">
+                {s.client?.companyName?.charAt(0) || 'C'}
+              </div>
+            )}
+            <div>
+              <div className="font-bold text-slate-900 hover:text-[#0040e0]">{s.client.companyName}</div>
+              <div className="text-[11px] text-slate-500 truncate max-w-[160px]">{s.client.email}</div>
+            </div>
           </Link>
-          <div className="text-[11px] text-slate-500 truncate max-w-[160px]">{s.client.email}</div>
         </td>
         <td className="py-3 px-4 font-semibold text-slate-700 max-w-[180px] truncate">{s.serviceNameSnapshot}</td>
         <td className="py-3 px-4 text-slate-600">{formatFriendlyDate(s.expiryDate)}</td>

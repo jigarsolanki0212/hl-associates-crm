@@ -344,16 +344,18 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
                       <td className="py-3 px-4">
                         <Link href={`/clients/${c.id}`} className="hover:underline flex items-center gap-2.5">
                           {c.logoUrl ? (
-                            <img
-                              src={c.logoUrl}
-                              alt={c.companyName}
-                              className="w-9 h-9 rounded-full object-cover bg-white border border-slate-200 shadow-xs shrink-0 ring-1 ring-slate-100"
-                              onError={(e) => {
-                                (e.currentTarget as HTMLElement).style.display = 'none';
-                              }}
-                            />
+                            <div className="w-10 h-10 rounded-full bg-white border border-slate-200 shadow-xs flex items-center justify-center shrink-0 p-1 ring-1 ring-slate-100 overflow-hidden">
+                              <img
+                                src={c.logoUrl}
+                                alt={c.companyName}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            </div>
                           ) : (
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500/10 to-indigo-500/20 text-[#0040e0] font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200/50 shadow-xs">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/10 to-indigo-500/20 text-[#0040e0] font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200/50 shadow-xs">
                               {c.companyName.charAt(0)}
                             </div>
                           )}
