@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { formatCurrency } from '@/lib/utils/currency';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import {
   Plus,
   Edit2,
@@ -196,12 +197,12 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
                 {/* Header Icon + Code + Active Switch */}
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden p-1">
+                    <div className="w-11 h-11 rounded-full bg-white border border-slate-200 shadow-xs ring-1 ring-slate-100 flex items-center justify-center shrink-0 overflow-hidden p-1">
                       {service.logoUrl ? (
                         <img
                           src={service.logoUrl}
                           alt={service.name}
-                          className="w-full h-full object-contain"
+                          className="w-full h-full object-cover rounded-full"
                           onError={(e) => {
                             (e.currentTarget as HTMLElement).style.display = 'none';
                           }}
@@ -297,21 +298,19 @@ export function ServicesView({ initialServices }: ServicesViewProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Category</label>
-              <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. QMS Systems" />
-            </div>
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Service Logo Image URL <span className="text-slate-400 font-normal">(Optional)</span></label>
-              <Input
-                type="url"
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="https://example.com/icon.png"
-              />
-            </div>
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Category</label>
+            <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. QMS Systems" />
           </div>
+
+          <ImageUpload
+            value={logoUrl}
+            onChange={setLogoUrl}
+            label="Service Logo / Compliance Seal"
+            fallbackText={name || 'Service'}
+            shape="circle"
+            size="md"
+          />
 
           <div>
             <label className="block font-semibold text-slate-700 mb-1">Summary Description</label>

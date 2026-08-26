@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 
 import { Toast, ToastMessage } from '@/components/ui/Toast';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Edit, Edit3 } from 'lucide-react';
 
 interface ClientDetailProps {
@@ -310,13 +311,13 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
             <img
               src={currentClient.logoUrl}
               alt={currentClient.companyName}
-              className="w-12 h-12 rounded-xl object-contain bg-white border border-slate-200 p-1 shrink-0 shadow-xs"
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover bg-white border-2 border-white shadow-md ring-2 ring-slate-100 p-0.5 shrink-0"
               onError={(e) => {
                 (e.currentTarget as HTMLElement).style.display = 'none';
               }}
             />
           ) : (
-            <div className="w-12 h-12 rounded-xl bg-[#0040e0]/10 text-[#0040e0] font-extrabold text-lg flex items-center justify-center shrink-0 border border-[#0040e0]/20">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-blue-500/10 to-indigo-500/20 text-[#0040e0] font-extrabold text-lg sm:text-xl flex items-center justify-center shrink-0 border-2 border-white shadow-md ring-2 ring-slate-100">
               {currentClient.companyName.charAt(0)}
             </div>
           )}
@@ -853,15 +854,14 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
             </div>
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Company Logo Image URL <span className="text-slate-400 font-normal">(Optional)</span></label>
-            <Input
-              type="url"
-              value={editLogoUrl}
-              onChange={(e) => setEditLogoUrl(e.target.value)}
-              placeholder="https://example.com/logo.png"
-            />
-          </div>
+          <ImageUpload
+            value={editLogoUrl}
+            onChange={setEditLogoUrl}
+            label="Company Logo / Brand Photo"
+            fallbackText={editCompany || 'Company'}
+            shape="circle"
+            size="lg"
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

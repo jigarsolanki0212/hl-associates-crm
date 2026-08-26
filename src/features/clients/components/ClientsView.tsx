@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { formatFriendlyDate } from '@/lib/dates/timezone';
 import { getDaysRemaining } from '@/lib/dates/expiryCalculator';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 interface ClientItem {
   id: string;
@@ -346,13 +347,13 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
                             <img
                               src={c.logoUrl}
                               alt={c.companyName}
-                              className="w-8 h-8 rounded-lg object-contain bg-white border border-slate-200 shrink-0 p-0.5"
+                              className="w-9 h-9 rounded-full object-cover bg-white border border-slate-200 shadow-xs shrink-0 ring-1 ring-slate-100"
                               onError={(e) => {
                                 (e.currentTarget as HTMLElement).style.display = 'none';
                               }}
                             />
                           ) : (
-                            <div className="w-8 h-8 rounded-lg bg-[#0040e0]/10 text-[#0040e0] font-bold text-xs flex items-center justify-center shrink-0">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500/10 to-indigo-500/20 text-[#0040e0] font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200/50 shadow-xs">
                               {c.companyName.charAt(0)}
                             </div>
                           )}
@@ -456,15 +457,14 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
             <Input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} required placeholder="e.g. Maven Medical Ltd" />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Company Logo Image URL <span className="text-slate-400 font-normal">(Optional)</span></label>
-            <Input
-              type="url"
-              value={newLogoUrl}
-              onChange={(e) => setNewLogoUrl(e.target.value)}
-              placeholder="https://example.com/logo.png"
-            />
-          </div>
+          <ImageUpload
+            value={newLogoUrl}
+            onChange={setNewLogoUrl}
+            label="Company Logo / Brand Photo"
+            fallbackText={newCompany || 'Company'}
+            shape="circle"
+            size="md"
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

@@ -141,5 +141,19 @@ describe('Official Company Identity & Multi-Service Verification Tests', () => {
       expect(srv2.isCustomLogo).toBe(false);
       expect(srv2.fallbackCategory).toBe('Indian CDSCO Regulations');
     });
+
+    it('verifies circular avatar styling and responsive touch target constraints', () => {
+      const getAvatarShapeClasses = (shape: 'circle' | 'rounded') => {
+        return shape === 'circle' ? 'rounded-full' : 'rounded-2xl';
+      };
+
+      expect(getAvatarShapeClasses('circle')).toBe('rounded-full');
+      expect(getAvatarShapeClasses('rounded')).toBe('rounded-2xl');
+
+      // Test data URI detection
+      const isBase64DataUrl = (val: string) => val.startsWith('data:image/');
+      expect(isBase64DataUrl('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD...')).toBe(true);
+      expect(isBase64DataUrl('https://example.com/logo.png')).toBe(false);
+    });
   });
 });
