@@ -65,7 +65,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        'flex flex-col bg-white border-r border-slate-200 transition-all duration-300 select-none touch-scroll',
+        'flex flex-col bg-white border-r border-slate-200 transition-all duration-300 select-none',
         isMobileDrawer
           ? 'relative w-full h-full border-r-0'
           : cn(

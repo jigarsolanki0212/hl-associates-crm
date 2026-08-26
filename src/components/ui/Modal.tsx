@@ -38,7 +38,7 @@ export function Modal({
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs transition-opacity animate-in fade-in" />
         <DialogPrimitive.Content
           className={cn(
-            'fixed left-1/2 top-1/2 z-50 w-[calc(100%-1.5rem)] sm:w-full -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-4 sm:p-6 shadow-modal border border-slate-200 duration-200 animate-in fade-in zoom-in-95 max-h-[92dvh] landscape-modal-body overflow-y-auto touch-scroll flex flex-col',
+            'fixed left-1/2 top-1/2 z-50 w-[calc(100%-1.5rem)] sm:w-full -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-4 sm:p-6 shadow-modal border border-slate-200 duration-200 animate-in fade-in zoom-in-95 max-h-[92dvh] landscape-modal-body overflow-hidden flex flex-col',
             sizeClasses[size],
             className
           )}
@@ -58,7 +58,7 @@ export function Modal({
             </DialogPrimitive.Close>
           </div>
 
-          <div className="flex-1 overflow-y-auto touch-scroll">{children}</div>
+          <div className="flex-1 overflow-y-auto touch-scroll overscroll-contain pr-1 -mr-1">{children}</div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

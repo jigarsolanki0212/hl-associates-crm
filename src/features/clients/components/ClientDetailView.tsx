@@ -596,7 +596,7 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
               <Plus className="w-3.5 h-3.5 mr-1" /> Add New Service Engagement
             </Button>
           </div>
-          <div className="overflow-x-auto touch-scroll">
+          <div className="table-container">
             {(!currentClient.services || currentClient.services.length === 0) ? (
               <div className="p-8 text-center space-y-3">
                 <div className="w-10 h-10 rounded-full bg-blue-50 text-[#0040e0] flex items-center justify-center mx-auto">
@@ -675,7 +675,7 @@ export function ClientDetailView({ client, availableServices = [] }: ClientDetai
       {/* Tab 3: Proformas */}
       {activeTab === 'proformas' && (
         <div className="bg-white rounded-lg border border-slate-200 shadow-card overflow-hidden">
-          <div className="overflow-x-auto touch-scroll">
+          <div className="table-container">
             {(!currentClient.proformas || currentClient.proformas.length === 0) ? (
               <div className="p-8 text-center text-slate-500 text-xs">
                 No proforma invoices generated for this client yet.

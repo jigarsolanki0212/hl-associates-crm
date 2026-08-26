@@ -272,7 +272,7 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
 
       {/* Inquiries Table */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-card overflow-hidden">
-        <div className="overflow-x-auto touch-scroll">
+        <div className="table-container">
           <table className="w-full text-left text-xs whitespace-nowrap min-w-[700px]">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">

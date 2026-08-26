@@ -32,7 +32,7 @@ export function Drawer({
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs transition-opacity animate-in fade-in" />
         <DialogPrimitive.Content
           className={cn(
-            'fixed top-0 bottom-0 z-50 bg-white p-4 sm:p-6 shadow-2xl border-slate-200 duration-300 animate-in overflow-y-auto touch-scroll flex flex-col',
+            'fixed top-0 bottom-0 z-50 bg-white p-4 sm:p-6 shadow-2xl border-slate-200 duration-300 animate-in overflow-hidden flex flex-col',
             side === 'right' ? 'right-0 border-l slide-in-from-right' : 'left-0 border-r slide-in-from-left',
             width,
             className

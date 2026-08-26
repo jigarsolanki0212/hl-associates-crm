@@ -275,7 +275,7 @@ export function DashboardView({ metrics }: DashboardViewProps) {
               </Link>
             </div>
 
-            <div className="overflow-x-auto touch-scroll">
+            <div className="table-container">
               <table className="w-full text-left text-xs sm:text-sm whitespace-nowrap min-w-[600px]">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
@@ -499,7 +499,7 @@ export function DashboardView({ metrics }: DashboardViewProps) {
               </Button>
             </div>
 
-            <div className="overflow-x-auto touch-scroll">
+            <div className="table-container">
               <table className="w-full text-left text-xs whitespace-nowrap min-w-[650px]">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
