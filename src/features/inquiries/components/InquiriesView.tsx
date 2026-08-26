@@ -18,6 +18,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import { formatFriendlyDate } from '@/lib/dates/timezone';
+import { TableSkeleton } from '@/components/ui/Skeleton';
 
 interface InquiryItem {
   id: string;
@@ -287,21 +288,19 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
-                    Loading inquiries...
-                  </td>
-                </tr>
-              ) : inquiries.length === 0 ? (
+            {isLoading ? (
+              <TableSkeleton rows={8} cols={7} />
+            ) : inquiries.length === 0 ? (
+              <tbody className="divide-y divide-slate-100">
                 <tr>
                   <td colSpan={9} className="py-12 text-center text-slate-400">
                     No inquiries found matching criteria.
                   </td>
                 </tr>
-              ) : (
-                inquiries.map((inq) => (
+              </tbody>
+            ) : (
+              <tbody className="divide-y divide-slate-100">
+                {inquiries.map((inq) => (
                   <tr key={inq.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3 px-4 font-semibold text-[#0040e0]">
                       <Link href={`/inquiries/${inq.id}`} className="hover:underline">
@@ -359,9 +358,9 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
+                ))}
+              </tbody>
+            )}
           </table>
         </div>
 

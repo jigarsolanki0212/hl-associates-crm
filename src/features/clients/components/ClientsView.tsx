@@ -22,6 +22,7 @@ import {
 import { formatFriendlyDate } from '@/lib/dates/timezone';
 import { getDaysRemaining } from '@/lib/dates/expiryCalculator';
 import { ImageUpload } from '@/components/ui/ImageUpload';
+import { TableSkeleton, Skeleton } from '@/components/ui/Skeleton';
 
 interface ClientItem {
   id: string;
@@ -321,21 +322,19 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">
-                    Loading clients...
-                  </td>
-                </tr>
-              ) : clients.length === 0 ? (
+            {isLoading ? (
+              <TableSkeleton rows={8} cols={6} />
+            ) : clients.length === 0 ? (
+              <tbody className="divide-y divide-slate-100">
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
                     No clients found.
                   </td>
                 </tr>
-              ) : (
-                clients.map((c) => {
+              </tbody>
+            ) : (
+              <tbody className="divide-y divide-slate-100">
+                {clients.map((c) => {
                   const primaryService = c.services?.[0];
                   const daysLeft = primaryService ? getDaysRemaining(primaryService.expiryDate) : null;
 
@@ -365,20 +364,27 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
                           </div>
                         </Link>
                       </td>
-
-                      <td className="py-3 px-4 text-slate-700 font-medium max-w-[200px] truncate">
-                        {primaryService?.serviceNameSnapshot || 'No active service'}
-                      </td>
-
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 text-slate-700">
                         {primaryService ? (
+                          <div className="font-semibold text-slate-900 max-w-[170px] truncate">
+                            {primaryService.serviceNameSnapshot}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">No Services</span>
+                        )}
+                        {c.services && c.services.length > 1 && (
+                          <span className="text-[10px] text-blue-600 font-medium">+{c.services.length - 1} more</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {primaryService?.expiryDate ? (
                           <div>
                             <div className="font-semibold text-slate-900">{formatFriendlyDate(primaryService.expiryDate)}</div>
                             <div
-                              className={`text-[10px] font-medium ${
-                                (daysLeft ?? 0) <= 15
+                              className={`text-[11px] font-bold ${
+                                (daysLeft ?? 999) <= 15
                                   ? 'text-red-600'
-                                  : (daysLeft ?? 0) <= 30
+                                  : (daysLeft ?? 999) <= 30
                                   ? 'text-amber-600'
                                   : 'text-slate-500'
                               }`}
@@ -418,9 +424,9 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
+                })}
+              </tbody>
+            )}
           </table>
         </div>
 

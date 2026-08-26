@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface SearchResult {
   id: string;
@@ -185,6 +186,23 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
           {/* Active Search Results */}
           {query.trim() && (
             <>
+              {isLoading && (
+                <div className="space-y-2 py-1">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={`search-skel-${i}`} className="p-3 rounded-lg border border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+                        <div className="space-y-1.5 flex-1 max-w-[200px]">
+                          <Skeleton className="h-3.5 w-full" />
+                          <Skeleton className="h-2.5 w-2/3" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {results.length === 0 && !isLoading && (
                 <div className="text-center py-10 text-slate-400 text-xs">
                   No matching records found for <span className="font-semibold text-slate-700">&ldquo;{query}&rdquo;</span>.

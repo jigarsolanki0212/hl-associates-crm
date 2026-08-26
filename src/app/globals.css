@@ -151,6 +151,15 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
   to { transform: translateX(0); }
 }
 
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.15s ease-out forwards;
 }
@@ -161,6 +170,19 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
 
 .animate-slide-in-left {
   animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #f1f5f9 0%,
+    #e2e8f0 25%,
+    #f8fafc 50%,
+    #e2e8f0 75%,
+    #f1f5f9 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite linear;
 }
 
 /* Mobile Landscape Optimizations (height < 550px) */

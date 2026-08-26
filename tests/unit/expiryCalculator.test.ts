@@ -26,8 +26,9 @@ describe('Expiry Calculator', () => {
   });
 
   it('should calculate remaining days accurately', () => {
-    const futureDate = addDays(new Date(), 45);
-    const daysRemaining = getDaysRemaining(futureDate);
+    const now = new Date();
+    const futureDate = addDays(now, 45);
+    const daysRemaining = getDaysRemaining(futureDate, now);
     expect(daysRemaining).toBe(45);
   });
 });
