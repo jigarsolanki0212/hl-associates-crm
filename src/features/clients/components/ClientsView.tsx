@@ -53,9 +53,19 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
 
   // Filters
   const [search, setSearch] = React.useState('');
+  const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [serviceId, setServiceId] = React.useState('');
   const [status, setStatus] = React.useState('');
   const [page, setPage] = React.useState(1);
+
+  // Debounce search query
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // New Client Modal
   const [isNewClientOpen, setIsNewClientOpen] = React.useState(false);
@@ -66,31 +76,35 @@ export function ClientsView({ initialServices, initialUsers }: ClientsViewProps)
   const [newAssigned, setNewAssigned] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const fetchClients = React.useCallback(async () => {
+  const fetchClients = React.useCallback(async (signal?: AbortSignal) => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.set('search', search);
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (status) params.set('status', status);
       if (serviceId) params.set('serviceId', serviceId);
       params.set('page', String(page));
 
-      const res = await fetch(`/api/clients?${params.toString()}`);
+      const res = await fetch(`/api/clients?${params.toString()}`, { signal });
       const json = await res.json();
       if (json.success) {
         setClients(json.data.clients || []);
         setPagination(json.data.pagination);
         if (json.data.stats) setStats(json.data.stats);
       }
-    } catch (err) {
-      console.error('Fetch clients error:', err);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error('Fetch clients error:', err);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [search, status, serviceId, page]);
+  }, [debouncedSearch, status, serviceId, page]);
 
   React.useEffect(() => {
-    fetchClients();
+    const controller = new AbortController();
+    fetchClients(controller.signal);
+    return () => controller.abort();
   }, [fetchClients]);
 
   const handleCreateClient = async (e: React.FormEvent) => {

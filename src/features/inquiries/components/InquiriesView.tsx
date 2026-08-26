@@ -49,35 +49,49 @@ export function InquiriesView({ initialServices, initialUsers }: InquiriesViewPr
 
   // Filter States
   const [search, setSearch] = React.useState('');
+  const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [status, setStatus] = React.useState('');
   const [serviceId, setServiceId] = React.useState('');
   const [page, setPage] = React.useState(1);
 
-  const fetchInquiries = React.useCallback(async () => {
+  // Debounce search input to avoid redundant network thrashing
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const fetchInquiries = React.useCallback(async (signal?: AbortSignal) => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.set('search', search);
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (status) params.set('status', status);
       if (serviceId) params.set('serviceId', serviceId);
       params.set('page', String(page));
 
-      const res = await fetch(`/api/inquiries?${params.toString()}`);
+      const res = await fetch(`/api/inquiries?${params.toString()}`, { signal });
       const json = await res.json();
       if (json.success) {
         setInquiries(json.data.inquiries || []);
         setPagination(json.data.pagination);
         if (json.data.stats) setStats(json.data.stats);
       }
-    } catch (err) {
-      console.error('Fetch inquiries error:', err);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error('Fetch inquiries error:', err);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [search, status, serviceId, page]);
+  }, [debouncedSearch, status, serviceId, page]);
 
   React.useEffect(() => {
-    fetchInquiries();
+    const controller = new AbortController();
+    fetchInquiries(controller.signal);
+    return () => controller.abort();
   }, [fetchInquiries]);
 
   const handleClearFilters = () => {
