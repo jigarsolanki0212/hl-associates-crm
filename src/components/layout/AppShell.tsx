@@ -8,6 +8,7 @@ import { Header } from './Header';
 import { GlobalSearchModal } from '@/components/search/GlobalSearchModal';
 import { NotificationDrawer, NotificationItem } from '@/components/notifications/NotificationDrawer';
 import { NewInquiryDialog } from '@/features/inquiries/components/NewInquiryDialog';
+import { Toast, ToastMessage } from '@/components/ui/Toast';
 import { LayoutDashboard, Inbox, Users, RefreshCw, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -37,6 +38,7 @@ export function AppShell({
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const [isNewInquiryOpen, setIsNewInquiryOpen] = React.useState(false);
   const [notifications, setNotifications] = React.useState(initialNotifications);
+  const [toast, setToast] = React.useState<ToastMessage | null>(null);
 
   // Close mobile drawer when route changes
   React.useEffect(() => {
@@ -173,11 +175,22 @@ export function AppShell({
         onMarkAllAsRead={handleMarkAllAsRead}
       />
 
+      {/* Global Floating Toast */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
       <NewInquiryDialog
         isOpen={isNewInquiryOpen}
         onClose={() => setIsNewInquiryOpen(false)}
         services={servicesList}
         users={usersList}
+        onSuccess={() => {
+          setIsNewInquiryOpen(false);
+          setToast({
+            type: 'success',
+            title: 'Inquiry Created',
+            description: 'New regulatory inquiry registered in CRM.',
+          });
+        }}
       />
     </div>
   );

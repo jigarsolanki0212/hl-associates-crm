@@ -20,14 +20,34 @@ interface ToastProps {
 }
 
 export function Toast({ toast, onClose }: ToastProps) {
+  const [progress, setProgress] = React.useState(100);
+
   React.useEffect(() => {
-    if (!toast || toast.type === 'loading' || toast.duration === 0) return;
+    if (!toast || toast.type === 'loading') return;
 
-    const timer = setTimeout(() => {
+    const duration = toast.duration || 4500;
+    const interval = 20;
+    const step = (interval / duration) * 100;
+
+    setProgress(100);
+    const progressTimer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev <= 0) {
+          clearInterval(progressTimer);
+          return 0;
+        }
+        return prev - step;
+      });
+    }, interval);
+
+    const dismissTimer = setTimeout(() => {
       onClose();
-    }, toast.duration || 4000);
+    }, duration);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearInterval(progressTimer);
+      clearTimeout(dismissTimer);
+    };
   }, [toast, onClose]);
 
   if (!toast) return null;
@@ -35,28 +55,58 @@ export function Toast({ toast, onClose }: ToastProps) {
   const getIcon = () => {
     switch (toast.type) {
       case 'success':
-        return <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />;
+        return (
+          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+          </div>
+        );
       case 'error':
-        return <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />;
+        return (
+          <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+            <AlertCircle className="w-5 h-5 text-rose-600" />
+          </div>
+        );
       case 'loading':
-        return <Loader2 className="w-5 h-5 text-[#0040e0] animate-spin shrink-0 mt-0.5" />;
+        return (
+          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+            <Loader2 className="w-5 h-5 text-[#0040e0] animate-spin" />
+          </div>
+        );
       case 'info':
       default:
-        return <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />;
+        return (
+          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+            <Info className="w-5 h-5 text-blue-600" />
+          </div>
+        );
     }
   };
 
-  const getStyles = () => {
+  const getCardStyles = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-white/95 border-emerald-300 text-slate-900 shadow-emerald-900/10 ring-1 ring-emerald-500/20';
+        return 'bg-white border-emerald-500 shadow-xl shadow-emerald-950/10 ring-1 ring-emerald-500/30';
       case 'error':
-        return 'bg-white/95 border-red-300 text-slate-900 shadow-red-900/10 ring-1 ring-red-500/20';
+        return 'bg-white border-rose-500 shadow-xl shadow-rose-950/10 ring-1 ring-rose-500/30';
       case 'loading':
-        return 'bg-white/95 border-blue-300 text-slate-900 shadow-blue-900/10 ring-1 ring-blue-500/20';
+        return 'bg-white border-blue-500 shadow-xl shadow-blue-950/10 ring-1 ring-blue-500/30';
       case 'info':
       default:
-        return 'bg-white/95 border-slate-300 text-slate-900 shadow-slate-900/10';
+        return 'bg-white border-slate-400 shadow-xl shadow-slate-950/10 ring-1 ring-slate-400/30';
+    }
+  };
+
+  const getProgressBarColor = () => {
+    switch (toast.type) {
+      case 'success':
+        return 'bg-emerald-500';
+      case 'error':
+        return 'bg-rose-500';
+      case 'loading':
+        return 'bg-[#0040e0]';
+      case 'info':
+      default:
+        return 'bg-slate-500';
     }
   };
 
@@ -64,29 +114,41 @@ export function Toast({ toast, onClose }: ToastProps) {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-[9999] max-w-sm w-[calc(100%-2.5rem)] sm:w-auto animate-in fade-in slide-in-from-bottom-5 duration-200"
+      className="fixed z-[9999] top-3 sm:top-auto sm:bottom-6 left-3 sm:left-auto right-3 sm:right-6 sm:max-w-md w-auto pointer-events-auto transition-all animate-in fade-in slide-in-from-top-3 sm:slide-in-from-bottom-5 duration-300"
     >
       <div
         className={cn(
-          'flex items-start gap-3 p-4 rounded-xl border shadow-2xl backdrop-blur-md transition-all',
-          getStyles()
+          'relative overflow-hidden flex items-start gap-3 p-3.5 sm:p-4 rounded-xl border transition-all',
+          getCardStyles()
         )}
       >
+        {/* Animated Progress Bar */}
+        {toast.type !== 'loading' && (
+          <div
+            className={cn('absolute bottom-0 left-0 h-1 transition-all ease-linear', getProgressBarColor())}
+            style={{ width: `${progress}%` }}
+          />
+        )}
+
         {getIcon()}
-        <div className="flex-1 min-w-0 pr-2">
-          <div className="text-xs font-bold text-slate-900 leading-tight">{toast.title}</div>
+
+        <div className="flex-1 min-w-0 pr-1">
+          <div className="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight">
+            {toast.title}
+          </div>
           {toast.description && (
-            <div className="text-[11px] text-slate-600 mt-1 leading-normal break-words">
+            <div className="text-[11px] sm:text-xs text-slate-600 mt-1 leading-snug break-words font-medium">
               {toast.description}
             </div>
           )}
         </div>
+
         <button
           onClick={onClose}
-          className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+          className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer shrink-0 mt-0.5"
           aria-label="Close notification"
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
     </div>
