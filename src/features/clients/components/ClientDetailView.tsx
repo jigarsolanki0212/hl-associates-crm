@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { formatFriendlyDate } from '@/lib/dates/timezone';
 import { formatCurrency } from '@/lib/utils/currency';
 import { getDaysRemaining } from '@/lib/dates/expiryCalculator';
@@ -45,6 +46,12 @@ export function ClientDetailView({ client }: ClientDetailProps) {
   const [isRenewing, setIsRenewing] = React.useState(false);
   const [feedbackMsg, setFeedbackMsg] = React.useState<string | null>(null);
 
+  // Compose Email Modal
+  const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
+  const [emailSubject, setEmailSubject] = React.useState(`Regulatory Update for ${client.companyName}`);
+  const [emailBody, setEmailBody] = React.useState(`Dear ${client.contactName},\n\nWe are writing to provide an update regarding your ongoing regulatory compliance services with HL Associates.\n\nBest regards,\nHL Associates Compliance Operations`);
+  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
+
   const handleRenewService = async () => {
     if (!renewingServiceId) return;
     setIsRenewing(true);
@@ -80,6 +87,38 @@ export function ClientDetailView({ client }: ClientDetailProps) {
       }
     } catch (err) {
       console.error('Reminder dispatch error:', err);
+    }
+  };
+
+  const handleSendCustomEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSendingEmail(true);
+    try {
+      const res = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipient: client.email,
+          subject: emailSubject,
+          message: emailBody,
+          entityType: 'CLIENT',
+          entityId: client.id,
+          category: 'FOLLOW_UP',
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setIsEmailModalOpen(false);
+        setFeedbackMsg(`Direct email dispatched to ${client.email}!`);
+        router.refresh();
+      } else {
+        alert(json.error?.message || 'Failed to dispatch email');
+      }
+    } catch (err) {
+      console.error('Send custom email error:', err);
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -121,8 +160,13 @@ export function ClientDetailView({ client }: ClientDetailProps) {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="secondary" size="md" className="flex-1 sm:flex-initial">
-            Edit Contact
+          <Button
+            variant="secondary"
+            size="md"
+            className="flex-1 sm:flex-initial"
+            onClick={() => setIsEmailModalOpen(true)}
+          >
+            <Mail className="w-4 h-4 mr-1.5 text-[#0040e0]" /> Send Email
           </Button>
           <Button
             variant="primary"
@@ -178,9 +222,12 @@ export function ClientDetailView({ client }: ClientDetailProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <div className="text-slate-500 font-semibold mb-0.5">Corporate Email</div>
-                  <a href={`mailto:${client.email}`} className="text-[#0040e0] font-semibold hover:underline flex items-center gap-1">
+                  <button
+                    onClick={() => setIsEmailModalOpen(true)}
+                    className="text-[#0040e0] font-semibold hover:underline flex items-center gap-1 text-left"
+                  >
                     <Mail className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{client.email}</span>
-                  </a>
+                  </button>
                 </div>
                 <div>
                   <div className="text-slate-500 font-semibold mb-0.5">Phone</div>
@@ -443,6 +490,59 @@ export function ClientDetailView({ client }: ClientDetailProps) {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Compose & Send Direct Email Modal */}
+      <Modal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        title={`Compose Email to ${client.companyName}`}
+        size="md"
+      >
+        <form onSubmit={handleSendCustomEmail} className="space-y-3 sm:space-y-4 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Recipient Email</label>
+            <Input value={client.email} disabled className="bg-slate-50 text-slate-600" />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Subject *</label>
+            <Input
+              value={emailSubject}
+              onChange={(e) => setEmailSubject(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Message Body *</label>
+            <Textarea
+              value={emailBody}
+              onChange={(e) => setEmailBody(e.target.value)}
+              rows={6}
+              required
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsEmailModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isSendingEmail}
+            >
+              <Send className="w-3.5 h-3.5 mr-1" /> Send Email Now
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

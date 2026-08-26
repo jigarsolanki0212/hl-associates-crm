@@ -16,6 +16,9 @@ import {
   CheckCircle2,
   Lock,
   Plus,
+  Send,
+  Sparkles,
+  AlertCircle,
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -31,6 +34,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
   const [users, setUsers] = React.useState(initialUsers);
   const [isSaving, setIsSaving] = React.useState(false);
   const [feedback, setFeedback] = React.useState<string | null>(null);
+  const [feedbackType, setFeedbackType] = React.useState<'success' | 'error'>('success');
 
   // Form states
   const [companyName, setCompanyName] = React.useState(settings.companyName || 'HL Associates');
@@ -44,10 +48,17 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
   const [companyTimezone, setCompanyTimezone] = React.useState(settings.companyTimezone || 'Asia/Kolkata');
 
   // SMTP Settings
-  const [smtpHost, setSmtpHost] = React.useState('');
-  const [smtpPort, setSmtpPort] = React.useState(587);
+  const [emailProvider, setEmailProvider] = React.useState('GMAIL');
+  const [smtpHost, setSmtpHost] = React.useState('smtp.gmail.com');
+  const [smtpPort, setSmtpPort] = React.useState(465);
   const [smtpUser, setSmtpUser] = React.useState('');
   const [smtpPass, setSmtpPass] = React.useState('');
+  const [smtpFrom, setSmtpFrom] = React.useState('');
+
+  // Test Email
+  const [testRecipient, setTestRecipient] = React.useState('');
+  const [isTestingEmail, setIsTestingEmail] = React.useState(false);
+  const [testResult, setTestResult] = React.useState<{ success: boolean; message: string } | null>(null);
 
   // User creation modal
   const [isNewUserOpen, setIsNewUserOpen] = React.useState(false);
@@ -56,6 +67,36 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
   const [newUserRole, setNewUserRole] = React.useState<'ADMIN' | 'SALES'>('SALES');
   const [newUserPassword, setNewUserPassword] = React.useState('Password123!');
   const [isCreatingUser, setIsCreatingUser] = React.useState(false);
+
+  const handleProviderSelect = (prov: string) => {
+    setEmailProvider(prov);
+    switch (prov) {
+      case 'GMAIL':
+        setSmtpHost('smtp.gmail.com');
+        setSmtpPort(465);
+        break;
+      case 'RESEND':
+        setSmtpHost('smtp.resend.com');
+        setSmtpPort(465);
+        setSmtpUser('resend');
+        break;
+      case 'SENDGRID':
+        setSmtpHost('smtp.sendgrid.net');
+        setSmtpPort(587);
+        setSmtpUser('apikey');
+        break;
+      case 'BREVO':
+        setSmtpHost('smtp-relay.brevo.com');
+        setSmtpPort(587);
+        break;
+      case 'OUTLOOK':
+        setSmtpHost('smtp.office365.com');
+        setSmtpPort(587);
+        break;
+      default:
+        break;
+    }
+  };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +119,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
         payload.smtpPort = Number(smtpPort);
         payload.smtpUser = smtpUser;
         payload.smtpPass = smtpPass;
+        payload.smtpFrom = smtpFrom || email;
       }
 
       const res = await fetch('/api/settings', {
@@ -89,13 +131,56 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
       const json = await res.json();
       if (json.success) {
         setSettings(json.data);
-        setFeedback('Company settings saved successfully.');
+        setFeedback('Company settings and encrypted email configuration saved successfully!');
+        setFeedbackType('success');
         setSmtpPass('');
+      } else {
+        setFeedback(json.error?.message || 'Failed to save settings');
+        setFeedbackType('error');
       }
     } catch (err) {
       console.error('Save settings error:', err);
+      setFeedback('An unexpected error occurred while saving.');
+      setFeedbackType('error');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleTestEmailConnection = async () => {
+    if (!testRecipient) {
+      setTestResult({ success: false, message: 'Please enter a test recipient email address.' });
+      return;
+    }
+
+    setIsTestingEmail(true);
+    setTestResult(null);
+
+    try {
+      const res = await fetch('/api/email/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipient: testRecipient,
+          host: smtpHost || undefined,
+          port: Number(smtpPort) || undefined,
+          user: smtpUser || undefined,
+          pass: smtpPass || undefined,
+          from: smtpFrom || undefined,
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setTestResult({ success: true, message: json.data.message });
+      } else {
+        setTestResult({ success: false, message: json.error?.message || 'Email test failed' });
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Connection test request error';
+      setTestResult({ success: false, message: msg });
+    } finally {
+      setIsTestingEmail(false);
     }
   };
 
@@ -122,6 +207,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
         setNewUserEmail('');
         setNewUserPassword('Password123!');
         setFeedback(`User ${json.data.fullName} created successfully.`);
+        setFeedbackType('success');
       }
     } catch (err) {
       console.error('Create user error:', err);
@@ -143,12 +229,22 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
       </div>
 
       {feedback && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded font-medium flex items-center justify-between">
+        <div
+          className={`p-3 border text-xs rounded font-medium flex items-center justify-between ${
+            feedbackType === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            {feedbackType === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            )}
             <span>{feedback}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-emerald-600 font-bold p-1 cursor-pointer">
+          <button onClick={() => setFeedback(null)} className="font-bold p-1 cursor-pointer">
             ✕
           </button>
         </div>
@@ -177,7 +273,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Contact Email</label>
+              <label className="block font-semibold text-slate-700 mb-1">Official Company Email</label>
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
 
@@ -239,23 +335,57 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
           </div>
         </div>
 
-        {/* Encrypted SMTP Configuration */}
+        {/* Encrypted SMTP & Real Email Configuration */}
         <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-[#0040e0]" />
+              <Mail className="w-4 h-4 text-[#0040e0]" />
               <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                Encrypted SMTP Credentials
+                Real Email Connection (SMTP)
               </h2>
             </div>
             <Badge variant={settings.isSmtpConfigured ? 'accepted' : 'actionNeeded'} className="self-start sm:self-auto">
-              {settings.isSmtpConfigured ? 'Configured & Encrypted' : 'Mock Delivery Mode'}
+              {settings.isSmtpConfigured ? '✓ Real Email Connected' : 'Mock Delivery Mode'}
             </Badge>
           </div>
 
-          <p className="text-xs text-slate-500">
-            When configured, SMTP credentials are encrypted with AES-256-GCM before saving to PostgreSQL. If left empty, the CRM utilizes high-fidelity simulated email delivery with full event logs.
-          </p>
+          <div className="p-3 bg-blue-50/70 border border-blue-100 rounded text-xs text-slate-700 space-y-1">
+            <div className="font-bold text-blue-900 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <span>Connect Your Real Email to Send Real Proformas & Reminders to Anyone</span>
+            </div>
+            <p className="text-[11px] text-slate-600">
+              Select your email provider below. Your password/app token is encrypted with AES-256-GCM before saving to PostgreSQL.
+            </p>
+          </div>
+
+          {/* Quick Preset Selector */}
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1.5 text-xs">Choose Email Provider Preset</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+              {[
+                { id: 'GMAIL', name: 'Gmail / Workspace' },
+                { id: 'RESEND', name: 'Resend' },
+                { id: 'SENDGRID', name: 'SendGrid' },
+                { id: 'BREVO', name: 'Brevo (Sendinblue)' },
+                { id: 'OUTLOOK', name: 'Outlook / Office 365' },
+                { id: 'CUSTOM', name: 'Custom SMTP' },
+              ].map((p) => (
+                <button
+                  type="button"
+                  key={p.id}
+                  onClick={() => handleProviderSelect(p.id)}
+                  className={`p-2 rounded text-xs font-semibold border transition-all text-center cursor-pointer ${
+                    emailProvider === p.id
+                      ? 'border-[#0040e0] bg-[#e5eeff] text-[#0040e0] ring-1 ring-[#0040e0]'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
             <div>
@@ -263,7 +393,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
               <Input
                 value={smtpHost}
                 onChange={(e) => setSmtpHost(e.target.value)}
-                placeholder="smtp.mailgun.org / smtp.sendgrid.net"
+                placeholder="smtp.gmail.com"
               />
             </div>
 
@@ -273,35 +403,100 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
                 type="number"
                 value={smtpPort}
                 onChange={(e) => setSmtpPort(Number(e.target.value))}
-                placeholder="587"
+                placeholder="465 (SSL) or 587 (TLS)"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">SMTP Username</label>
+              <label className="block font-semibold text-slate-700 mb-1">
+                {emailProvider === 'GMAIL' ? 'Your Gmail Address' : 'SMTP Username / API Key'}
+              </label>
               <Input
                 value={smtpUser}
                 onChange={(e) => setSmtpUser(e.target.value)}
-                placeholder="postmaster@hlassociates.com"
+                placeholder={emailProvider === 'GMAIL' ? 'youremail@gmail.com' : 'username or apikey'}
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">SMTP Password / Token</label>
+              <label className="block font-semibold text-slate-700 mb-1">
+                {emailProvider === 'GMAIL'
+                  ? 'Google App Password (16 letters)'
+                  : 'SMTP Password / API Token'}
+              </label>
               <Input
                 type="password"
                 value={smtpPass}
                 onChange={(e) => setSmtpPass(e.target.value)}
                 placeholder="••••••••••••••••"
               />
+              {emailProvider === 'GMAIL' && (
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Tip: Generate a 16-character App Password at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-[#0040e0] underline">Google App Passwords</a>.
+                </p>
+              )}
             </div>
+
+            <div className="sm:col-span-2">
+              <label className="block font-semibold text-slate-700 mb-1">Sender "From" Display Header (Optional)</label>
+              <Input
+                value={smtpFrom}
+                onChange={(e) => setSmtpFrom(e.target.value)}
+                placeholder={`"HL Associates" <${smtpUser || email}>`}
+              />
+            </div>
+          </div>
+
+          {/* Test SMTP & Send Real Test Email Box */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-3 mt-4">
+            <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+              <Send className="w-3.5 h-3.5 text-[#0040e0]" />
+              <span>Verify & Send Real Test Email</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                type="email"
+                value={testRecipient}
+                onChange={(e) => setTestRecipient(e.target.value)}
+                placeholder="Enter recipient email (e.g. your personal email)..."
+                className="h-9 flex-1 rounded border border-slate-200 bg-white px-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleTestEmailConnection}
+                isLoading={isTestingEmail}
+                className="shrink-0"
+              >
+                Send Test Email
+              </Button>
+            </div>
+
+            {testResult && (
+              <div
+                className={`p-2.5 rounded text-xs font-medium flex items-start gap-2 ${
+                  testResult.success
+                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                    : 'bg-red-50 border border-red-200 text-red-800'
+                }`}
+              >
+                {testResult.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                )}
+                <span>{testResult.message}</span>
+              </div>
+            )}
           </div>
         </div>
 
         {currentUserRole === 'ADMIN' && (
           <div className="flex justify-end">
             <Button type="submit" variant="primary" size="md" isLoading={isSaving} className="w-full sm:w-auto">
-              Save Settings
+              Save Settings & Connect Email
             </Button>
           </div>
         )}
