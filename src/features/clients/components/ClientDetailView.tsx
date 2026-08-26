@@ -28,6 +28,8 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
+import { Toast, ToastMessage } from '@/components/ui/Toast';
+
 interface ClientDetailProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: any;
@@ -44,7 +46,7 @@ export function ClientDetailView({ client }: ClientDetailProps) {
   const [renewDuration, setRenewDuration] = React.useState(12);
   const [renewFee, setRenewFee] = React.useState(200000);
   const [isRenewing, setIsRenewing] = React.useState(false);
-  const [feedbackMsg, setFeedbackMsg] = React.useState<string | null>(null);
+  const [toast, setToast] = React.useState<ToastMessage | null>(null);
 
   // Compose Email Modal
   const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
@@ -67,7 +69,11 @@ export function ClientDetailView({ client }: ClientDetailProps) {
       const json = await res.json();
       if (json.success) {
         setRenewingServiceId(null);
-        setFeedbackMsg('Service renewed successfully! Expiry extended.');
+        setToast({
+          type: 'success',
+          title: 'Engagement Renewed',
+          description: 'Service expiry has been extended and logged in audit history.',
+        });
         router.refresh();
       }
     } catch (err) {
@@ -82,7 +88,11 @@ export function ClientDetailView({ client }: ClientDetailProps) {
       const res = await fetch(`/api/renewals/${clientServiceId}/send`, { method: 'POST' });
       const json = await res.json();
       if (json.success) {
-        setFeedbackMsg('Renewal reminder email dispatched to client.');
+        setToast({
+          type: 'success',
+          title: 'Renewal Notice Dispatched',
+          description: `Milestone reminder sent to ${client.email}`,
+        });
         router.refresh();
       }
     } catch (err) {
@@ -110,10 +120,18 @@ export function ClientDetailView({ client }: ClientDetailProps) {
       const json = await res.json();
       if (json.success) {
         setIsEmailModalOpen(false);
-        setFeedbackMsg(`Direct email dispatched to ${client.email}!`);
+        setToast({
+          type: 'success',
+          title: 'Email Delivered',
+          description: `Direct message dispatched to ${client.email}`,
+        });
         router.refresh();
       } else {
-        alert(json.error?.message || 'Failed to dispatch email');
+        setToast({
+          type: 'error',
+          title: 'Failed to Send Email',
+          description: json.error?.message || 'Email dispatch failed',
+        });
       }
     } catch (err) {
       console.error('Send custom email error:', err);
@@ -124,6 +142,9 @@ export function ClientDetailView({ client }: ClientDetailProps) {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Floating Toast Notification */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
       {/* Breadcrumb */}
       <div className="flex items-center">
         <Link
@@ -134,15 +155,6 @@ export function ClientDetailView({ client }: ClientDetailProps) {
           <span>Back to Clients</span>
         </Link>
       </div>
-
-      {feedbackMsg && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded font-medium flex items-center justify-between">
-          <span>{feedbackMsg}</span>
-          <button onClick={() => setFeedbackMsg(null)} className="text-emerald-600 font-bold p-1 cursor-pointer">
-            ✕
-          </button>
-        </div>
-      )}
 
       {/* Header */}
       <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-4">

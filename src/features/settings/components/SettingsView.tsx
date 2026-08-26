@@ -6,19 +6,21 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
+import { Toast, ToastMessage } from '@/components/ui/Toast';
 import {
   Building2,
   Mail,
   Shield,
   Clock,
   Users,
-  Play,
   CheckCircle2,
   Lock,
   Plus,
   Send,
   Sparkles,
   AlertCircle,
+  Loader2,
+  Save,
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -33,27 +35,37 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
   const [settings, setSettings] = React.useState(initialSettings);
   const [users, setUsers] = React.useState(initialUsers);
   const [isSaving, setIsSaving] = React.useState(false);
-  const [feedback, setFeedback] = React.useState<string | null>(null);
-  const [feedbackType, setFeedbackType] = React.useState<'success' | 'error'>('success');
+  const [toast, setToast] = React.useState<ToastMessage | null>(null);
 
   // Form states
-  const [companyName, setCompanyName] = React.useState(settings.companyName || 'HL Associates');
-  const [brandTagline, setBrandTagline] = React.useState(settings.brandTagline || 'Enterprise Regulatory Compliance Suite');
-  const [email, setEmail] = React.useState(settings.email || 'compliance@hlassociates.com');
-  const [phone, setPhone] = React.useState(settings.phone || '+91 98765 43210');
-  const [address, setAddress] = React.useState(settings.address || 'Suite 400, Regulatory Tower, BKC, Mumbai 400051');
-  const [taxId, setTaxId] = React.useState(settings.taxId || 'GSTIN-27AABCH1234F1Z5');
-  const [currency, setCurrency] = React.useState(settings.currency || 'INR');
-  const [defaultTaxRate, setDefaultTaxRate] = React.useState(settings.defaultTaxRate || 18);
-  const [companyTimezone, setCompanyTimezone] = React.useState(settings.companyTimezone || 'Asia/Kolkata');
+  const [companyName, setCompanyName] = React.useState(initialSettings.companyName || 'HL Associates');
+  const [brandTagline, setBrandTagline] = React.useState(initialSettings.brandTagline || 'Enterprise Regulatory Compliance Suite');
+  const [email, setEmail] = React.useState(initialSettings.email || 'compliance@hlassociates.com');
+  const [phone, setPhone] = React.useState(initialSettings.phone || '+91 98765 43210');
+  const [address, setAddress] = React.useState(initialSettings.address || 'Suite 400, Regulatory Tower, BKC, Mumbai 400051');
+  const [taxId, setTaxId] = React.useState(initialSettings.taxId || 'GSTIN-27AABCH1234F1Z5');
+  const [currency, setCurrency] = React.useState(initialSettings.currency || 'INR');
+  const [defaultTaxRate, setDefaultTaxRate] = React.useState(initialSettings.defaultTaxRate ?? 18);
+  const [companyTimezone, setCompanyTimezone] = React.useState(initialSettings.companyTimezone || 'Asia/Kolkata');
+
+  // Detect initial provider from host
+  const detectProvider = (host: string) => {
+    if (!host) return 'GMAIL';
+    if (host.includes('gmail')) return 'GMAIL';
+    if (host.includes('resend')) return 'RESEND';
+    if (host.includes('sendgrid')) return 'SENDGRID';
+    if (host.includes('brevo')) return 'BREVO';
+    if (host.includes('office365') || host.includes('outlook')) return 'OUTLOOK';
+    return 'CUSTOM';
+  };
 
   // SMTP Settings
-  const [emailProvider, setEmailProvider] = React.useState('GMAIL');
-  const [smtpHost, setSmtpHost] = React.useState('smtp.gmail.com');
-  const [smtpPort, setSmtpPort] = React.useState(465);
-  const [smtpUser, setSmtpUser] = React.useState('');
+  const [emailProvider, setEmailProvider] = React.useState(detectProvider(initialSettings.smtpHost));
+  const [smtpHost, setSmtpHost] = React.useState(initialSettings.smtpHost || 'smtp.gmail.com');
+  const [smtpPort, setSmtpPort] = React.useState(initialSettings.smtpPort || 465);
+  const [smtpUser, setSmtpUser] = React.useState(initialSettings.smtpUser || '');
   const [smtpPass, setSmtpPass] = React.useState('');
-  const [smtpFrom, setSmtpFrom] = React.useState('');
+  const [smtpFrom, setSmtpFrom] = React.useState(initialSettings.smtpFrom || '');
 
   // Test Email
   const [testRecipient, setTestRecipient] = React.useState('');
@@ -78,12 +90,12 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
       case 'RESEND':
         setSmtpHost('smtp.resend.com');
         setSmtpPort(465);
-        setSmtpUser('resend');
+        setSmtpUser((prev: string) => prev || 'resend');
         break;
       case 'SENDGRID':
         setSmtpHost('smtp.sendgrid.net');
         setSmtpPort(587);
-        setSmtpUser('apikey');
+        setSmtpUser((prev: string) => prev || 'apikey');
         break;
       case 'BREVO':
         setSmtpHost('smtp-relay.brevo.com');
@@ -114,11 +126,13 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
         companyTimezone,
       };
 
-      if (smtpHost && smtpUser && smtpPass) {
+      if (smtpHost && smtpUser) {
         payload.smtpHost = smtpHost;
         payload.smtpPort = Number(smtpPort);
         payload.smtpUser = smtpUser;
-        payload.smtpPass = smtpPass;
+        if (smtpPass) {
+          payload.smtpPass = smtpPass;
+        }
         payload.smtpFrom = smtpFrom || email;
       }
 
@@ -131,17 +145,31 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
       const json = await res.json();
       if (json.success) {
         setSettings(json.data);
-        setFeedback('Company settings and encrypted email configuration saved successfully!');
-        setFeedbackType('success');
+        if (json.data.smtpHost) setSmtpHost(json.data.smtpHost);
+        if (json.data.smtpPort) setSmtpPort(json.data.smtpPort);
+        if (json.data.smtpUser) setSmtpUser(json.data.smtpUser);
+        if (json.data.smtpFrom) setSmtpFrom(json.data.smtpFrom);
         setSmtpPass('');
+
+        setToast({
+          type: 'success',
+          title: 'Settings Saved Successfully',
+          description: 'Company branding, regional rates, and email configuration are up to date.',
+        });
       } else {
-        setFeedback(json.error?.message || 'Failed to save settings');
-        setFeedbackType('error');
+        setToast({
+          type: 'error',
+          title: 'Failed to Save Settings',
+          description: json.error?.message || 'An error occurred during save.',
+        });
       }
     } catch (err) {
       console.error('Save settings error:', err);
-      setFeedback('An unexpected error occurred while saving.');
-      setFeedbackType('error');
+      setToast({
+        type: 'error',
+        title: 'Connection Error',
+        description: 'Unable to reach the server. Please check your connection.',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -149,7 +177,11 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
 
   const handleTestEmailConnection = async () => {
     if (!testRecipient) {
-      setTestResult({ success: false, message: 'Please enter a test recipient email address.' });
+      setToast({
+        type: 'error',
+        title: 'Recipient Required',
+        description: 'Please enter a valid destination email to send the test verification.',
+      });
       return;
     }
 
@@ -173,12 +205,28 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
       const json = await res.json();
       if (json.success) {
         setTestResult({ success: true, message: json.data.message });
+        setToast({
+          type: 'success',
+          title: 'Real Email Dispatched!',
+          description: `Test email was delivered to ${testRecipient}. Check your inbox!`,
+        });
       } else {
-        setTestResult({ success: false, message: json.error?.message || 'Email test failed' });
+        const errorMsg = json.error?.message || 'Email test failed';
+        setTestResult({ success: false, message: errorMsg });
+        setToast({
+          type: 'error',
+          title: 'Email Delivery Failed',
+          description: errorMsg,
+        });
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Connection test request error';
       setTestResult({ success: false, message: msg });
+      setToast({
+        type: 'error',
+        title: 'Test Error',
+        description: msg,
+      });
     } finally {
       setIsTestingEmail(false);
     }
@@ -206,18 +254,35 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
         setNewUserName('');
         setNewUserEmail('');
         setNewUserPassword('Password123!');
-        setFeedback(`User ${json.data.fullName} created successfully.`);
-        setFeedbackType('success');
+        setToast({
+          type: 'success',
+          title: 'Team Member Added',
+          description: `${json.data.fullName} can now log in with their credentials.`,
+        });
+      } else {
+        setToast({
+          type: 'error',
+          title: 'Failed to Create User',
+          description: json.error?.message || 'User creation error.',
+        });
       }
     } catch (err) {
       console.error('Create user error:', err);
+      setToast({
+        type: 'error',
+        title: 'Error',
+        description: 'Failed to create team member.',
+      });
     } finally {
       setIsCreatingUser(false);
     }
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 pb-12">
+      {/* Floating Global Toast Notification */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
@@ -227,28 +292,6 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
           </p>
         </div>
       </div>
-
-      {feedback && (
-        <div
-          className={`p-3 border text-xs rounded font-medium flex items-center justify-between ${
-            feedbackType === 'success'
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-              : 'bg-red-50 border-red-200 text-red-800'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            {feedbackType === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-            )}
-            <span>{feedback}</span>
-          </div>
-          <button onClick={() => setFeedback(null)} className="font-bold p-1 cursor-pointer">
-            ✕
-          </button>
-        </div>
-      )}
 
       {/* Main Settings Form */}
       <form onSubmit={handleSaveSettings} className="space-y-4 sm:space-y-6">
@@ -309,7 +352,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="h-9 w-full rounded border border-slate-200 bg-white px-2.5 text-xs text-slate-900"
+                className="h-9 w-full rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-900 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs"
               >
                 <option value="INR">INR - Indian Rupee (₹)</option>
                 <option value="USD">USD - US Dollar ($)</option>
@@ -355,7 +398,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
               <span>Connect Your Real Email to Send Real Proformas & Reminders to Anyone</span>
             </div>
             <p className="text-[11px] text-slate-600">
-              Select your email provider below. Your password/app token is encrypted with AES-256-GCM before saving to PostgreSQL.
+              Select your email provider below. Your configuration is saved directly to the database and encrypted with AES-256-GCM.
             </p>
           </div>
 
@@ -377,8 +420,8 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
                   onClick={() => handleProviderSelect(p.id)}
                   className={`p-2 rounded text-xs font-semibold border transition-all text-center cursor-pointer ${
                     emailProvider === p.id
-                      ? 'border-[#0040e0] bg-[#e5eeff] text-[#0040e0] ring-1 ring-[#0040e0]'
-                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                      ? 'border-[#0040e0] bg-[#e5eeff] text-[#0040e0] ring-2 ring-[#0040e0]/20 shadow-xs'
+                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400'
                   }`}
                 >
                   {p.name}
@@ -394,6 +437,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
                 value={smtpHost}
                 onChange={(e) => setSmtpHost(e.target.value)}
                 placeholder="smtp.gmail.com"
+                required
               />
             </div>
 
@@ -404,6 +448,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
                 value={smtpPort}
                 onChange={(e) => setSmtpPort(Number(e.target.value))}
                 placeholder="465 (SSL) or 587 (TLS)"
+                required
               />
             </div>
 
@@ -415,6 +460,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
                 value={smtpUser}
                 onChange={(e) => setSmtpUser(e.target.value)}
                 placeholder={emailProvider === 'GMAIL' ? 'youremail@gmail.com' : 'username or apikey'}
+                required
               />
             </div>
 
@@ -428,11 +474,11 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
                 type="password"
                 value={smtpPass}
                 onChange={(e) => setSmtpPass(e.target.value)}
-                placeholder="••••••••••••••••"
+                placeholder={settings.isSmtpConfigured && !smtpPass ? '•••••••••••••••• (Encrypted in DB)' : 'Enter password / app token'}
               />
               {emailProvider === 'GMAIL' && (
                 <p className="text-[10px] text-slate-500 mt-1">
-                  Tip: Generate a 16-character App Password at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-[#0040e0] underline">Google App Passwords</a>.
+                  Tip: Generate a 16-letter App Password at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-[#0040e0] underline font-semibold">Google App Passwords</a>.
                 </p>
               )}
             </div>
@@ -448,7 +494,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
           </div>
 
           {/* Test SMTP & Send Real Test Email Box */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-3 mt-4">
+          <div className="p-3.5 sm:p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3 mt-4">
             <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
               <Send className="w-3.5 h-3.5 text-[#0040e0]" />
               <span>Verify & Send Real Test Email</span>
@@ -460,7 +506,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
                 value={testRecipient}
                 onChange={(e) => setTestRecipient(e.target.value)}
                 placeholder="Enter recipient email (e.g. your personal email)..."
-                className="h-9 flex-1 rounded border border-slate-200 bg-white px-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-focusBlue"
+                className="h-9 flex-1 rounded border border-slate-300 bg-white px-3 text-xs text-slate-900 placeholder:text-slate-400 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs"
               />
               <Button
                 type="button"
@@ -494,9 +540,25 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
         </div>
 
         {currentUserRole === 'ADMIN' && (
-          <div className="flex justify-end">
-            <Button type="submit" variant="primary" size="md" isLoading={isSaving} className="w-full sm:w-auto">
-              Save Settings & Connect Email
+          <div className="flex justify-end sticky bottom-4 z-10 bg-surface-app/90 backdrop-blur-sm p-2 rounded-lg">
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              isLoading={isSaving}
+              className="w-full sm:w-auto shadow-md"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <span>Saving Settings...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-1.5" />
+                  <span>Save Settings & Connect Email</span>
+                </>
+              )}
             </Button>
           </div>
         )}
@@ -565,7 +627,7 @@ export function SettingsView({ initialSettings, initialUsers, currentUserRole }:
             <select
               value={newUserRole}
               onChange={(e) => setNewUserRole(e.target.value as any)}
-              className="h-9 w-full rounded border border-slate-200 bg-white px-2.5 text-xs text-slate-900"
+              className="h-9 w-full rounded border border-slate-300 bg-white px-2.5 text-xs text-slate-900 transition-all focus:outline-none focus:border-[#0040e0] focus:ring-2 focus:ring-[#0040e0]/20 shadow-xs"
             >
               <option value="SALES">SALES - Sales Representative</option>
               <option value="ADMIN">ADMIN - System Administrator</option>
