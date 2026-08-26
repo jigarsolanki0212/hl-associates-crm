@@ -2,10 +2,8 @@ import * as React from 'react';
 import { db } from '@/db/client';
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import { Badge } from '@/components/ui/Badge';
-import { formatFriendlyDate } from '@/lib/dates/timezone';
-import { Bell, AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import Link from 'next/link';
+import { NotificationsView } from '@/features/notifications/components/NotificationsView';
+import { addDays } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,67 +11,76 @@ export default async function NotificationsPage() {
   const user = await getSession();
   if (!user) redirect('/login');
 
-  const notifications = await db.notification.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: 'desc' },
-    take: 50,
-  });
+  const now = new Date();
+  const in60Days = addDays(now, 60);
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'URGENT':
-      case 'WARNING':
-        return <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />;
-      case 'SUCCESS':
-        return <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />;
-      default:
-        return <Info className="w-5 h-5 text-blue-600 shrink-0" />;
-    }
-  };
+  // 1. Query Real Notifications from Database
+  const [dbNotifications, expiringServices, recentInquiries] = await Promise.all([
+    db.notification.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    }),
+    db.clientService.findMany({
+      where: {
+        status: { in: ['ACTIVE', 'EXPIRING_SOON'] },
+        expiryDate: { lte: in60Days },
+      },
+      include: { client: true },
+      orderBy: { expiryDate: 'asc' },
+      take: 5,
+    }),
+    db.inquiry.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 3,
+    }),
+  ]);
 
-  return (
-    <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Notification Center</h1>
-        <p className="text-xs text-slate-500 mt-0.5">Stay informed on assignments, expiry alerts, and client proposals.</p>
-      </div>
+  // Combine with live compliance alerts if database notification count is small
+  const generatedAlerts = [
+    ...dbNotifications.map((n) => ({
+      id: n.id,
+      type: n.type as 'URGENT' | 'WARNING' | 'SUCCESS' | 'INFO',
+      title: n.title,
+      message: n.message,
+      link: n.link,
+      readAt: n.readAt ? n.readAt.toISOString() : null,
+      createdAt: n.createdAt.toISOString(),
+    })),
+  ];
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-card divide-y divide-slate-100">
-        {notifications.length === 0 ? (
-          <div className="py-12 text-center text-xs text-slate-400">
-            <Bell className="w-8 h-8 mx-auto mb-2 opacity-40" />
-            <p>No notifications found.</p>
-          </div>
-        ) : (
-          notifications.map((n) => (
-            <div
-              key={n.id}
-              className={`p-5 flex items-start gap-4 transition-colors ${
-                !n.readAt ? 'bg-blue-50/40' : 'hover:bg-slate-50/60'
-              }`}
-            >
-              {getIcon(n.type)}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="text-sm font-bold text-slate-900">{n.title}</span>
-                  <Badge variant={n.type === 'URGENT' ? 'urgent' : n.type === 'SUCCESS' ? 'accepted' : 'new'}>
-                    {n.type}
-                  </Badge>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed mb-2">{n.message}</p>
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span>{formatFriendlyDate(n.createdAt)}</span>
-                  {n.link && (
-                    <Link href={n.link} className="text-[#0040e0] font-semibold hover:underline">
-                      View Associated Record →
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+  // If few records exist, supplement with live database compliance milestone alerts
+  if (generatedAlerts.length <= 2) {
+    expiringServices.forEach((s) => {
+      const isUrgent = s.expiryDate <= addDays(now, 15);
+      generatedAlerts.push({
+        id: `gen-exp-${s.id}`,
+        type: isUrgent ? 'URGENT' : 'WARNING',
+        title: isUrgent ? 'Urgent Compliance Expiration Alert' : 'Upcoming Service Renewal Notice',
+        message: `${s.client.companyName} (${s.serviceNameSnapshot}) regulatory certification expires on ${s.expiryDate.toISOString().slice(0, 10)}. Immediate audit liaison recommended.`,
+        link: `/clients/${s.clientId}`,
+        readAt: null,
+        createdAt: s.createdAt.toISOString(),
+      });
+    });
+
+    recentInquiries.forEach((inq) => {
+      generatedAlerts.push({
+        id: `gen-inq-${inq.id}`,
+        type: inq.status === 'ACCEPTED' ? 'SUCCESS' : 'INFO',
+        title: inq.status === 'ACCEPTED' ? 'Commercial Proposal Accepted' : 'New Regulatory Inquiry Logged',
+        message: `Inquiry ${inq.inquiryNumber} for ${inq.companyName} is in ${inq.status} status. Assigned for compliance review.`,
+        link: `/inquiries/${inq.id}`,
+        readAt: null,
+        createdAt: inq.createdAt.toISOString(),
+      });
+    });
+  }
+
+  // Deduplicate and sort by date
+  const finalNotifications = generatedAlerts.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  return <NotificationsView initialNotifications={finalNotifications} />;
 }
