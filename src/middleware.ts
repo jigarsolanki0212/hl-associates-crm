@@ -8,7 +8,12 @@ export function middleware(request: NextRequest) {
   const publicRoutes = ['/login', '/forgot-password', '/reset-password'];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
   const isApiRoute = pathname.startsWith('/api/');
-  const isStaticAsset = pathname.startsWith('/_next') || pathname.startsWith('/brand') || pathname.startsWith('/icons') || pathname === '/favicon.ico';
+  const isStaticAsset =
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/brand') ||
+    pathname.startsWith('/icons') ||
+    pathname === '/favicon.ico' ||
+    /\.(svg|png|jpg|jpeg|webp|ico)$/i.test(pathname);
 
   if (isStaticAsset) {
     return NextResponse.next();
@@ -44,5 +49,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
 };
